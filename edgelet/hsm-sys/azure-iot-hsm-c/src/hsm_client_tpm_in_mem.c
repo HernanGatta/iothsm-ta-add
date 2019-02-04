@@ -10,16 +10,8 @@
 #include "hsm_log.h"
 #include "hsm_constants.h"
 
-#ifdef IOTHSM_USE_TA
-	#include "enc_u.h"
-	#include "common.h"
-#endif
-
 struct EDGE_TPM_TAG
 {
-#ifdef IOTHSM_USE_TA
-	oe_enclave_t* enclave;
-#endif
     HSM_CLIENT_STORE_HANDLE hsm_store_handle;
 };
 typedef struct EDGE_TPM_TAG EDGE_TPM;
@@ -104,14 +96,6 @@ static HSM_CLIENT_HANDLE edge_hsm_client_tpm_create(void)
         free(edge_tpm);
         result = NULL;
     }
-#ifdef IOTHSM_USE_TA
-	else if ((oe_create_enc_enclave("enc", OE_ENCLAVE_TYPE_DEFAULT, 0, NULL, 0, &edge_tpm->enclave)) != OE_OK)
-	{
-		LOG_ERROR("Could not create enclave");
-		free(edge_tpm);
-		result = NULL;
-	}
-#endif
     else
     {
         result = (HSM_CLIENT_HANDLE)edge_tpm;
@@ -134,13 +118,6 @@ static void edge_hsm_client_tpm_destroy(HSM_CLIENT_HANDLE handle)
         {
             LOG_ERROR("Could not close store handle. Error code %d", status);
         }
-
-#ifdef IOTHSM_USE_TA
-		if (oe_terminate_enclave(edge_tpm->enclave) != OE_OK)
-		{
-			LOG_ERROR("Could not terminate enclave");
-		}
-#endif
 
         free(edge_tpm);
     }
@@ -176,13 +153,6 @@ static int edge_hsm_client_activate_identity_key
         LOG_ERROR("Key len length cannot be 0");
         result = __FAILURE__;
     }
-#ifdef IOTHSM_USE_TA
-	else if (ecall_TaSetSigningKey(edge_tpm->enclave, &result, key, key_len) != OE_OK || result != 0)
-	{
-		LOG_ERROR("TaSetSigningKey ecall failed");
-		result = __FAILURE__;
-	}
-#else
     else 
     {
         int status;
@@ -195,7 +165,6 @@ static int edge_hsm_client_activate_identity_key
             result = __FAILURE__;
         }
     }
-#endif
 
     return result;
 }
@@ -398,37 +367,8 @@ static int edge_hsm_client_sign_with_identity
     size_t* digest_size
 )
 {
-#ifdef IOTHSM_USE_TA
-	int result;
-	EDGE_TPM* edge_tpm = (EDGE_TPM*)handle;
-
-	if (handle == NULL ||
-		data_to_be_signed == NULL ||
-		digest == NULL ||
-		digest_size == NULL)
-	{
-		LOG_ERROR("Invalid argument to edge_hsm_client_sign_with_identity");
-		return __FAILURE__;
-	}
-
-	*digest_size = MD_OUTPUT_SIZE;
-	*digest = malloc(*digest_size);
-	if (*digest == NULL) {
-		LOG_ERROR("Failed to allocate digest buffer");
-		return __FAILURE__;
-	}
-	
-	if (ecall_TaSignData(edge_tpm->enclave, &result, data_to_be_signed, data_to_be_signed_size, *digest, *digest_size) != OE_OK || result != 0)
-	{
-		LOG_ERROR("TaSignData ecall failed");
-		return __FAILURE__;
-	}
-
-	return 0;
-#else
     return perform_sign(handle, data_to_be_signed, data_to_be_signed_size,
                         NULL, 0, digest, digest_size, 0);
-#endif
 }
 
 static int edge_hsm_client_derive_and_sign_with_identity
@@ -442,38 +382,8 @@ static int edge_hsm_client_derive_and_sign_with_identity
     size_t* digest_size
 )
 {
-#ifdef IOTHSM_USE_TA
-	int result;
-	EDGE_TPM* edge_tpm = (EDGE_TPM*)handle;
-
-	if (handle == NULL ||
-		data_to_be_signed == NULL ||
-		identity == NULL ||
-		digest == NULL ||
-		digest_size == NULL)
-	{
-		LOG_ERROR("Invalid argument to edge_hsm_client_derive_and_sign_with_identity");
-		return __FAILURE__;
-	}
-
-	*digest_size = MD_OUTPUT_SIZE;
-	*digest = malloc(*digest_size);
-	if (*digest == NULL) {
-		LOG_ERROR("Failed to allocate digest buffer");
-		return __FAILURE__;
-	}
-
-	if (ecall_TaDeriveAndSignData(edge_tpm->enclave, &result, identity, identity_size, data_to_be_signed, data_to_be_signed_size, *digest, *digest_size) != OE_OK || result != 0)
-	{
-		LOG_ERROR("TaDeriveAndSignData ecall failed");
-		return __FAILURE__;
-	}
-
-	return 0;
-#else
     return perform_sign(handle, data_to_be_signed, data_to_be_signed_size,
                         identity, identity_size, digest, digest_size, 1);
-#endif
 }
 
 static void edge_hsm_free_buffer(void *buffer)
