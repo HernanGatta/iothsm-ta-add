@@ -7,3 +7,7 @@
 [submodule "edgelet/hsm-sys/azure-iot-hsm-ta/deps/openenclave"]
 	path = edgelet/hsm-sys/azure-iot-hsm-ta/deps/openenclave
 	url = https://github.com/Microsoft/openenclave.git
+[submodule "edgelet/hsm-sys/azure-iot-hsm-c/deps/openenclave"]
+	path = edgelet/hsm-sys/azure-iot-hsm-c/deps/openenclave
+	url = https://github.com/Microsoft/openenclave
+	branch = feature.new_platforms
