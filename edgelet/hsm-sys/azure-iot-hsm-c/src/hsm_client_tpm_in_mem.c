@@ -118,7 +118,6 @@ static void edge_hsm_client_tpm_destroy(HSM_CLIENT_HANDLE handle)
         {
             LOG_ERROR("Could not close store handle. Error code %d", status);
         }
-
         free(edge_tpm);
     }
 }
@@ -130,9 +129,7 @@ static int edge_hsm_client_activate_identity_key
     size_t key_len
 )
 {
-	int result = 0;
-	EDGE_TPM *edge_tpm = (EDGE_TPM*) handle;
-
+    int result;
     if (!g_is_tpm_initialized)
     {
         LOG_ERROR("hsm_client_tpm_init not called");
@@ -153,16 +150,21 @@ static int edge_hsm_client_activate_identity_key
         LOG_ERROR("Key len length cannot be 0");
         result = __FAILURE__;
     }
-    else 
+    else
     {
         int status;
         const HSM_CLIENT_STORE_INTERFACE *store_if = g_hsm_store_if;
+        EDGE_TPM *edge_tpm = (EDGE_TPM*)handle;
         if ((status = store_if->hsm_client_store_insert_sas_key(edge_tpm->hsm_store_handle,
                                                                 EDGELET_IDENTITY_SAS_KEY_NAME,
                                                                 key, key_len)) != 0)
         {
             LOG_ERROR("Could not insert SAS key. Error code %d", status);
             result = __FAILURE__;
+        }
+        else
+        {
+            result = 0;
         }
     }
 

@@ -129,14 +129,13 @@ static void edge_hsm_client_crypto_destroy(HSM_CLIENT_HANDLE handle)
         {
             LOG_ERROR("Could not close store handle. Error code %d", status);
         }
-
         free(edge_crypto);
     }
 }
 
 static int edge_hsm_client_get_random_bytes(HSM_CLIENT_HANDLE handle, unsigned char* rand_buffer, size_t num_bytes)
 {
-	int result = 0;
+    int result;
     if (!g_is_crypto_initialized)
     {
         LOG_ERROR("hsm_client_crypto_init not called");
@@ -165,15 +164,14 @@ static int edge_hsm_client_get_random_bytes(HSM_CLIENT_HANDLE handle, unsigned c
         {
             *rand_buffer++ = rand() % 256;
         }
+        result = 0;
     }
-
-	return result;
+    return result;
 }
 
 static int edge_hsm_client_create_master_encryption_key(HSM_CLIENT_HANDLE handle)
 {
-	int result = 0;
-	EDGE_CRYPTO *edge_crypto = (EDGE_CRYPTO*) handle;
+    int result;
 
     if (!g_is_crypto_initialized)
     {
@@ -185,20 +183,27 @@ static int edge_hsm_client_create_master_encryption_key(HSM_CLIENT_HANDLE handle
         LOG_ERROR("Invalid handle value specified");
         result = __FAILURE__;
     }
-    else if (g_hsm_store_if->hsm_client_store_insert_encryption_key(edge_crypto->hsm_store_handle,
-																	EDGELET_ENC_KEY_NAME) != 0)
+    else
     {
-        LOG_ERROR("Could not insert encryption key %s", EDGELET_ENC_KEY_NAME);
-        result = __FAILURE__;
+        EDGE_CRYPTO *edge_crypto = (EDGE_CRYPTO*)handle;
+        if (g_hsm_store_if->hsm_client_store_insert_encryption_key(edge_crypto->hsm_store_handle,
+                                                                   EDGELET_ENC_KEY_NAME) != 0)
+        {
+            LOG_ERROR("Could not insert encryption key %s", EDGELET_ENC_KEY_NAME);
+            result = __FAILURE__;
+        }
+        else
+        {
+            result = 0;
+        }
     }
 
-	return result;
+    return result;
 }
 
 static int edge_hsm_client_destroy_master_encryption_key(HSM_CLIENT_HANDLE handle)
 {
-	int result = 0;
-	EDGE_CRYPTO *edge_crypto = (EDGE_CRYPTO*) handle;
+    int result;
 
     if (!g_is_crypto_initialized)
     {
@@ -210,15 +215,23 @@ static int edge_hsm_client_destroy_master_encryption_key(HSM_CLIENT_HANDLE handl
         LOG_ERROR("Invalid handle value specified");
         result = __FAILURE__;
     }
-    else if (g_hsm_store_if->hsm_client_store_remove_key(edge_crypto->hsm_store_handle,
-														 HSM_KEY_ENCRYPTION,
-                                                         EDGELET_ENC_KEY_NAME) != 0)
+    else
     {
-        LOG_ERROR("Could not remove encryption key %s", EDGELET_ENC_KEY_NAME);
-        result = __FAILURE__;
+        EDGE_CRYPTO *edge_crypto = (EDGE_CRYPTO*)handle;
+        if (g_hsm_store_if->hsm_client_store_remove_key(edge_crypto->hsm_store_handle,
+                                                        HSM_KEY_ENCRYPTION,
+                                                        EDGELET_ENC_KEY_NAME) != 0)
+        {
+            LOG_ERROR("Could not remove encryption key %s", EDGELET_ENC_KEY_NAME);
+            result = __FAILURE__;
+        }
+        else
+        {
+            result = 0;
+        }
     }
 
-	return result;
+    return result;
 }
 
 static CERT_INFO_HANDLE edge_hsm_client_create_certificate(HSM_CLIENT_HANDLE handle, CERT_PROPS_HANDLE certificate_props)
@@ -338,14 +351,13 @@ static int encrypt_data
     SIZED_BUFFER *ct
 )
 {
-	int result = 0;
-
+    int result;
+    KEY_HANDLE key_handle;
     const HSM_CLIENT_STORE_INTERFACE *store_if = g_hsm_store_if;
     const HSM_CLIENT_KEY_INTERFACE *key_if = g_hsm_key_if;
-
-	KEY_HANDLE key_handle = store_if->hsm_client_store_open_key(edge_crypto->hsm_store_handle,
-                                                    HSM_KEY_ENCRYPTION,
-                                                    EDGELET_ENC_KEY_NAME);
+    key_handle = store_if->hsm_client_store_open_key(edge_crypto->hsm_store_handle,
+                                                     HSM_KEY_ENCRYPTION,
+                                                     EDGELET_ENC_KEY_NAME);
     if (key_handle == NULL)
     {
         LOG_ERROR("Could not get encryption key by name '%s'", EDGELET_ENC_KEY_NAME);
@@ -372,7 +384,7 @@ static int encrypt_data
         }
     }
 
-	return result;
+    return result;
 }
 
 static int decrypt_data
@@ -384,14 +396,13 @@ static int decrypt_data
     SIZED_BUFFER *pt
 )
 {
-	int result = 0;
-
+    int result;
     KEY_HANDLE key_handle;
     const HSM_CLIENT_STORE_INTERFACE *store_if = g_hsm_store_if;
     const HSM_CLIENT_KEY_INTERFACE *key_if = g_hsm_key_if;
     key_handle = store_if->hsm_client_store_open_key(edge_crypto->hsm_store_handle,
-                                                    HSM_KEY_ENCRYPTION,
-                                                    EDGELET_ENC_KEY_NAME);
+                                                     HSM_KEY_ENCRYPTION,
+                                                     EDGELET_ENC_KEY_NAME);
     if (key_handle == NULL)
     {
         LOG_ERROR("Could not get encryption key by name '%s'", EDGELET_ENC_KEY_NAME);
@@ -418,7 +429,7 @@ static int decrypt_data
         }
     }
 
-	return result;
+    return result;
 }
 
 static int edge_hsm_client_encrypt_data
