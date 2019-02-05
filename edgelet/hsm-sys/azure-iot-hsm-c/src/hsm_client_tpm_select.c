@@ -60,6 +60,7 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
                 }
             }
             
+#if defined(HSM_USE_TEE)
             if (*use_tpm == true)
             {
                 if (strcmp_i(env_use_tpm, "enclave"))
@@ -68,6 +69,7 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
                     *use_enclave = true;
                 }
             }
+#endif  // HSM_USE_TEE
 
             free(env_use_tpm);
         }
@@ -101,7 +103,8 @@ int hsm_client_tpm_init(void)
                 g_use_tpm_device = true;
             }
         }
-        else if (use_tpm_flag)
+#if defined(HSM_USE_TEE)
+        else if (use_enclave_flag)
         {
             result = hsm_client_tpm_ta_init();
             if (result == 0)
@@ -109,6 +112,7 @@ int hsm_client_tpm_init(void)
                 g_use_enclave = true;
             }
         }
+#endif  // HSM_USE_TEE
         else
         {
             result = hsm_client_tpm_store_init();

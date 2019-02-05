@@ -7,6 +7,9 @@ set (iothsm_VERSION_MAJOR 1)
 set (iothsm_VERSION_MINOR 0)
 set (iothsm_VERSION_PATCH 6)
 
+# User-configurable options.
+option(use_enclave "set use_enclave to ON to support secure enclaves for cryptographic operations (default is OFF)" OFF)
+
 #Use solution folders.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -21,7 +24,6 @@ set(source_c_files
     ./src/certificate_info.c
     ./src/constants.c
     ./src/edge_enc_openssl_key.c
-    ./src/edge_hsm_client_crypto.c
     ./src/edge_hsm_client_store.c
     ./src/edge_hsm_client_x509.c
     ./src/edge_hsm_key_interface.c
@@ -51,6 +53,21 @@ set(source_h_files
     ./src/hsm_log.h
     ./src/hsm_utils.h
 )
+
+if(use_enclave)
+    set(source_c_files ${source_c_files}
+        ./src/edge_hsm_client_crypto_ta.c
+        ./src/hsm_client_tpm_in_ta.c)
+    set(source_h_files ${source_h_files}
+        ./src/hsm_client_tpm_in_ta.h)
+
+    add_definitions(-DHSM_USE_TEE)
+
+    add_subdirectory(./deps/openenclave/new_platforms EXCLUDE_FROM_ALL)
+else()
+    set(source_c_files ${source_c_files}
+        ./src/edge_hsm_client_crypto.c)
+endif(use_enclave)
 
 if(MSVC)
     #windows needs this define
@@ -118,7 +135,6 @@ endif(run_unittests)
 
 add_subdirectory(./deps/c-shared EXCLUDE_FROM_ALL)
 add_subdirectory(./deps/utpm EXCLUDE_FROM_ALL)
-add_subdirectory(./deps/openenclave/new_platforms EXCLUDE_FROM_ALL)
 
 if (save_ut)
     set(run_unittests ${save_ut} CACHE BOOL "unittests" FORCE)
@@ -175,7 +191,3 @@ set (CPACK_RPM_PACKAGE_DESCRIPTION "Azure IoT standard mode HSM lib")
 set (CPACK_RPM_PACKAGE_LICENSE "Proprietary")
 
 include (CPack)
-
-# Open Enclave
-OPTION (USE_TA "" OFF)
-
