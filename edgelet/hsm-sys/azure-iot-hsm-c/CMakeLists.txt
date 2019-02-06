@@ -56,10 +56,11 @@ set(source_h_files
 
 if(use_enclave)
     add_subdirectory(./deps/openenclave/new_platforms EXCLUDE_FROM_ALL)
+    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/deps/openenclave/new_platforms/cmake")
 
     add_definitions(-DHSM_USE_TEE)
 
-    include(./deps/openenclave/new_platforms/cmake/oeedl_file.cmake)
+    include(oeedl_file)
     oeedl_file(./enc/enc.edl host ENC_GEN ENC_C_GEN ENC_H_GEN ${OE_PATH}/include)
 
     set(source_c_files ${source_c_files}
@@ -77,6 +78,8 @@ if(use_enclave)
     if(NOT MSVC)
         set_source_files_properties(${ENC_C_GEN} PROPERTIES COMPILE_FLAGS -Wno-unused-parameter)
     endif(NOT MSVC)
+
+    add_subdirectory(enc)
 else()
     set(source_c_files ${source_c_files}
         ./src/edge_hsm_client_crypto.c)
