@@ -128,10 +128,12 @@ void hsm_client_tpm_deinit(void)
     {
         hsm_client_tpm_device_deinit();
     }
+#if defined(HSM_USE_TEE)
     else if (g_use_enclave)
     {
         hsm_client_tpm_ta_deinit();
     }
+#endif  // HSM_USE_TEE
     else
     {
         hsm_client_tpm_store_deinit();
@@ -145,10 +147,12 @@ const HSM_CLIENT_TPM_INTERFACE* hsm_client_tpm_interface(void)
     {
         result = hsm_client_tpm_device_interface();
     }
+#if defined(HSM_USE_TEE)
     else if (g_use_enclave)
     {
         result = hsm_client_tpm_ta_interface();
     }
+#endif  // HSM_USE_TEE
     else
     {
         result = hsm_client_tpm_store_interface();
