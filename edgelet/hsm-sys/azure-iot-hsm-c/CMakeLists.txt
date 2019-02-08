@@ -71,15 +71,13 @@ if(use_enclave)
         ./src/hsm_client_tpm_in_ta.h
         ${ENC_H_GEN})
 
-    include_directories(${OE_PATH}/include)
-    include_directories(${NP_PATH}/include)
-    include_directories(${CMAKE_BINARY_DIR})
-
-    if(NOT MSVC)
-        set_source_files_properties(${ENC_C_GEN} PROPERTIES COMPILE_FLAGS -Wno-unused-parameter)
-    endif(NOT MSVC)
-
     add_subdirectory(enc)
+
+    if(MSVC)
+        add_definitions(/wd4100)
+    else()
+        set_source_files_properties(${ENC_C_GEN} PROPERTIES COMPILE_FLAGS -Wno-unused-parameter)
+    endif(MSVC)
 else()
     set(source_c_files ${source_c_files}
         ./src/edge_hsm_client_crypto.c)
@@ -119,6 +117,10 @@ if(BUILD_SHARED)
 else()
     add_library(iothsm STATIC ${source_c_files} ${source_in_mem_store_c_files} ${source_h_files})
 endif(BUILD_SHARED)
+
+if(use_enclave)
+    configure_host(iothsm)
+endif(use_enclave)
 
 set(preinstall_iothsm_library_dll ${CMAKE_CURRENT_BINARY_DIR}/$(Configuration)/iothsm.dll)
 

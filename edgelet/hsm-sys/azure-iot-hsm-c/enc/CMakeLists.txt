@@ -10,4 +10,5 @@ add_enclave(
     SOURCES
         enc.c
         ${GEN}
-    C_GEN ${C_GEN})
+    C_GEN ${C_GEN}
+    LIBRARIES mbedcrypto_enc)
