@@ -12,3 +12,8 @@ add_enclave(
         ${GEN}
     C_GEN ${C_GEN}
     LIBRARIES mbedcrypto_enc)
+
+install(
+    TARGETS enc
+    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR})

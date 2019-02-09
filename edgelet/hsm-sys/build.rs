@@ -76,10 +76,13 @@ fn main() {
     // Clone Azure C -shared library
     let c_shared_repo = "azure-iot-hsm-c/deps/c-shared";
     let utpm_repo = "azure-iot-hsm-c/deps/utpm";
+    let oe_repo = "azure-iot-hsm-c/deps/openenclave";
+    let oe_new_platforms = format!("{}/new_platforms", oe_repo);
 
     println!("#Start Update C-Shared Utilities");
     if !Path::new(&format!("{}/.git", c_shared_repo)).exists()
         || !Path::new(&format!("{}/.git", utpm_repo)).exists()
+        || !Path::new(&format!("{}/.git", oe_repo)).exists()
     {
         let _ = Command::new("git")
             .arg("submodule")
@@ -118,6 +121,14 @@ fn main() {
         .profile("Release")
         .build();
 
+    println!("#And build the Open Enclave SDK");
+    let _shared = Config::new(oe_new_platforms)
+        .define("OE_TEE", "SGX")
+        .define("OE_USE_SIMULATION", "ON")
+        .set_platform_defines()
+        .profile("Release")
+        .build();
+
     // make the C libary at azure-iot-hsm-c (currently a subdirectory in this
     // crate)
     // Always make the Release version because Rust links to the Release CRT.
@@ -136,6 +147,9 @@ fn main() {
         .define("use_default_uuid", "ON")
         .define("use_http", "OFF")
         .define("skip_samples", "ON")
+        .define("use_enclave", "ON")
+        .define("OE_TEE", "SGX")
+        .define("OE_USE_SIMULATION", "ON")
         .set_platform_defines()
         .set_build_shared()
         .profile("Release")
@@ -160,6 +174,10 @@ fn main() {
     println!("cargo:rustc-link-lib=aziotsharedutil");
     #[cfg(debug_assertions)]
     println!("cargo:rustc-link-lib=utpm");
+    #[cfg(debug_assertions)]
+    println!("cargo:rustc-link-lib=oehost");
+    println!("cargo:rustc-link-lib=oesocket_host");
+    println!("cargo:rustc-link-lib=oestdio_host");
 
     #[cfg(windows)]
     {
@@ -169,6 +187,14 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=libeay32");
         println!("cargo:rustc-link-lib=ssleay32");
+
+        println!(
+            "cargo:rustc-link-search=native={}/bin/x64/Release",
+            env::var("SGXSDKInstallPath").unwrap()
+        );
+        println!("cargo:rustc-link-lib=sgx_urts_sim");
+        println!("cargo:rustc-link-lib=sgx_uae_service_sim");
+        println!("cargo:rustc-link-lib=sgx_uprotected_fs");
     }
 
     #[cfg(unix)]
