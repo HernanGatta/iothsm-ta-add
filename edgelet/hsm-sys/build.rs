@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 extern crate cmake;
 
+use std::fs;
 use std::env;
 use std::path::Path;
 use std::process::Command;
@@ -37,6 +38,7 @@ impl SetPlatformDefines for Config {
             .cxxflag("/DWIN32")
             .cflag("/D_WINDOWS")
             .cxxflag("/D_WINDOWS")
+            .build_arg("/m")
             .define(USE_EMULATOR, use_emulator)
             .define("use_cppunittest", "OFF")
     }
@@ -167,6 +169,11 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib", iothsm.display());
     println!("cargo:rustc-link-search=native={}/lib64", iothsm.display());
     println!("cargo:rustc-link-lib=iothsm");
+
+    #[cfg(windows)]
+    fs::copy(
+        format!("{}/bin/enc.signed.dll", iothsm.display()),
+        format!("{}/../../../deps/enc.signed.dll", iothsm.display()));
 
     // we need to explicitly link with c shared util only when we build the C
     // library as a static lib which we do only in rust debug builds

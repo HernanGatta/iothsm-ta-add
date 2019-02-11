@@ -17,3 +17,9 @@ install(
     TARGETS enc
     LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(SGX)
+    install(
+        FILES $<TARGET_FILE_DIR:enc>/enc.signed.dll
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
