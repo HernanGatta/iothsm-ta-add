@@ -21,7 +21,6 @@ struct EDGE_CRYPTO_TAG
 typedef struct EDGE_CRYPTO_TAG EDGE_CRYPTO;
 
 static const HSM_CLIENT_STORE_INTERFACE* g_hsm_store_if = NULL;
-static const HSM_CLIENT_KEY_INTERFACE* g_hsm_key_if = NULL;
 static bool g_is_crypto_initialized = false;
 
 int hsm_client_crypto_init(void)
@@ -31,15 +30,9 @@ int hsm_client_crypto_init(void)
     {
         int status;
         const HSM_CLIENT_STORE_INTERFACE* store_if;
-        const HSM_CLIENT_KEY_INTERFACE* key_if;
         if ((store_if = hsm_client_store_interface()) == NULL)
         {
             LOG_ERROR("HSM store interface not available");
-            result = __FAILURE__;
-        }
-        else if ((key_if = hsm_client_key_interface()) == NULL)
-        {
-            LOG_ERROR("HSM key interface not available");
             result = __FAILURE__;
         }
         else if ((status = store_if->hsm_client_store_create(EDGE_STORE_NAME)) != 0)
@@ -51,7 +44,6 @@ int hsm_client_crypto_init(void)
         {
             g_is_crypto_initialized = true;
             g_hsm_store_if = store_if;
-            g_hsm_key_if = key_if;
 			srand((unsigned int)time(NULL));
             result = 0;
         }
@@ -78,7 +70,6 @@ void hsm_client_crypto_deinit(void)
             LOG_ERROR("Could not destroy store. Error code %d", status);
         }
         g_hsm_store_if = NULL;
-        g_hsm_key_if = NULL;
         g_is_crypto_initialized = false;
     }
 }
