@@ -24,6 +24,7 @@ set(source_c_files
     ./src/certificate_info.c
     ./src/constants.c
     ./src/edge_enc_openssl_key.c
+    ./src/edge_hsm_client_store_keys.c
     ./src/edge_hsm_client_store_layout.c
     ./src/edge_hsm_client_store_pki.c
     ./src/edge_hsm_client_store.c

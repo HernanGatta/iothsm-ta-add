@@ -180,3 +180,47 @@ int build_enc_key_file_path
 );
 
 int hsm_provision_edge_certificates(void);
+
+KEY_HANDLE edge_hsm_client_open_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    HSM_KEY_T key_type,
+    const char* key_name
+);
+
+int edge_hsm_client_close_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    KEY_HANDLE key_handle
+);
+
+int edge_hsm_client_store_remove_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    HSM_KEY_T key_type,
+    const char* key_name
+);
+
+int edge_hsm_client_store_insert_sas_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    const char* key_name,
+    const unsigned char* key,
+    size_t key_size
+);
+
+int edge_hsm_client_store_insert_encryption_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    const char* key_name
+);
+
+void destroy_key
+(
+    STORE_ENTRY_KEY *key
+);
+
+void destroy_keys
+(
+    SINGLYLINKEDLIST_HANDLE keys
+);
