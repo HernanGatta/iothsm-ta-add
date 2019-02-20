@@ -24,6 +24,8 @@ set(source_c_files
     ./src/certificate_info.c
     ./src/constants.c
     ./src/edge_enc_openssl_key.c
+    ./src/edge_hsm_client_store_layout.c
+    ./src/edge_hsm_client_store_pki.c
     ./src/edge_hsm_client_store.c
     ./src/edge_hsm_client_x509.c
     ./src/edge_hsm_key_interface.c
@@ -44,6 +46,7 @@ set(source_h_files
     ./inc/certificate_info.h
     ./inc/hsm_client_data.h
     ./inc/hsm_certificate_props.h
+    ./src/edge_hsm_client_store.h
     ./src/edge_sas_perform_sign_with_key.h
     ./src/hsm_client_store.h
     ./src/hsm_client_tpm_device.h
