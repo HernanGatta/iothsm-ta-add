@@ -1,4 +1,21 @@
 #include "edge_hsm_client_store.h"
+#include "hsm_key.h"
+
+struct STORE_ENTRY_PKI_CERT_TAG
+{
+    STRING_HANDLE id;
+    STRING_HANDLE issuer_id;
+    STRING_HANDLE cert_file;
+    STRING_HANDLE private_key_file;
+};
+typedef struct STORE_ENTRY_PKI_CERT_TAG STORE_ENTRY_PKI_CERT;
+
+struct STORE_ENTRY_PKI_TRUSTED_CERT_TAG
+{
+    STRING_HANDLE id;
+    STRING_HANDLE cert_file;
+};
+typedef struct STORE_ENTRY_PKI_TRUSTED_CERT_TAG STORE_ENTRY_PKI_TRUSTED_CERT;
 
 static int edge_hsm_client_store_create_pki_cert_internal
 (

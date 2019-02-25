@@ -39,6 +39,29 @@ int get_master_encryption_key(unsigned char* key)
 	return 0;
 }
 
+int get_encryption_key(const char* key_file_path, unsigned char* key)
+{
+	OE_FILE* key_file;
+
+	if ((key_file = oe_fopen(
+		OE_FILE_SECURE_BEST_EFFORT,
+		key_file_path,
+		"r")) == NULL)
+	{
+		return 1;
+	}
+
+	if (oe_fread(key, 1, MASTER_ENCRYPTION_KEY_SIZE_BYTES, key_file) !=
+		MASTER_ENCRYPTION_KEY_SIZE_BYTES)
+	{
+		oe_fclose(key_file);
+		return 1;
+	}
+
+	oe_fclose(key_file);
+	return 0;
+}
+
 int get_identity_key(unsigned char** key, size_t* key_len)
 {
 	OE_FILE* key_file;
@@ -172,7 +195,8 @@ int ecall_TaEncryptData(
 	return 0;
 }
 
-int ecall_TaDecryptData(
+int ecall_Decrypt(
+	const char* key_file,
 	const unsigned char* ciphertext_buffer,
 	size_t ciphertext_buffer_size,
 	const unsigned char* aad,
@@ -190,7 +214,7 @@ int ecall_TaDecryptData(
 	size_t ciphertext_size =
 		ciphertext_buffer_size - CIPHER_HEADER_V1_SIZE_BYTES;
 
-	if (ciphertext_buffer == NULL || aad == NULL || iv == NULL || output_buffer == NULL)
+	if (key_file == NULL || ciphertext_buffer == NULL || aad == NULL || iv == NULL || output_buffer == NULL)
 	{
 		return 1;
 	}
@@ -205,7 +229,7 @@ int ecall_TaDecryptData(
 		return 1;
 	}
 
-	if (get_master_encryption_key(key) != 0)
+	if (get_encryption_key(key_file, key) != 0)
 	{
 		return 1;
 	}
@@ -376,4 +400,129 @@ exit:
 	}
 	return result;
 
+}
+
+int ecall_Encrypt(
+	const char* key_file,
+	const unsigned char* plaintext,
+	size_t plaintext_len,
+	const unsigned char* aad,
+	size_t aad_len,
+	const unsigned char* iv,
+	size_t iv_len,
+	unsigned char* output_buffer,
+	size_t output_buffer_size)
+{
+	mbedtls_gcm_context gcm;
+	unsigned char key[MASTER_ENCRYPTION_KEY_SIZE_BYTES];
+	unsigned char* version = output_buffer;
+	unsigned char* tag = output_buffer + CIPHER_VERSION_SIZE_BYTES;
+	unsigned char* ciphertext = output_buffer + CIPHER_HEADER_V1_SIZE_BYTES;
+
+	if (key_file == NULL || plaintext == NULL || aad == NULL || iv == NULL || output_buffer == NULL)
+	{
+		return 1;
+	}
+
+	if (output_buffer_size < plaintext_len + CIPHER_HEADER_V1_SIZE_BYTES)
+	{
+		return 1;
+	}
+
+	if (get_encryption_key(key_file, key) != 0)
+	{
+		return 1;
+	}
+
+	mbedtls_gcm_init(&gcm);
+	if (mbedtls_gcm_setkey(
+		&gcm,
+		MBEDTLS_CIPHER_ID_AES,
+		key,
+		MASTER_ENCRYPTION_KEY_SIZE_BYTES * 8) != 0)
+	{
+		return 1;
+	}
+
+	*version = CIPHER_VERSION_V1;
+	if (mbedtls_gcm_crypt_and_tag(
+		&gcm,
+		MBEDTLS_GCM_ENCRYPT,
+		plaintext_len,
+		iv,
+		iv_len,
+		aad,
+		aad_len,
+		plaintext,
+		ciphertext,
+		CIPHER_TAG_V1_SIZE_BYTES,
+		tag) != 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+int ecall_CreateEncryptionKey(
+	const char* filepath)
+{
+	unsigned char key[MASTER_ENCRYPTION_KEY_SIZE_BYTES];
+	OE_FILE* key_file;
+
+	if (oe_random(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES) != OE_OK)
+	{
+		return 1;
+	}
+
+	if ((key_file = oe_fopen(
+		OE_FILE_SECURE_BEST_EFFORT,
+		filepath,
+		"w")) == NULL)
+	{
+		return 1;
+	}
+
+	if (oe_fwrite(key, 1, MASTER_ENCRYPTION_KEY_SIZE_BYTES, key_file) !=
+		MASTER_ENCRYPTION_KEY_SIZE_BYTES)
+	{
+		oe_fclose(key_file);
+		return 1;
+	}
+
+	return 0;
+}
+
+int ecall_VerifyEncryptionKey(
+	const char* filepath)
+{
+	OE_FILE* key_file;
+
+	if ((key_file = oe_fopen(
+		OE_FILE_SECURE_BEST_EFFORT,
+		filepath,
+		"w")) == NULL)
+	{
+		return 1;
+	}
+
+	oe_fclose(key_file);
+	return 0;
+}
+
+int ecall_DeleteEncryptionKey(
+	const char* filepath)
+{
+	OE_FILE* key_file;
+
+	if ((key_file = oe_fopen(
+		OE_FILE_SECURE_BEST_EFFORT,
+		filepath,
+		"w")) == NULL)
+	{
+		return 1;
+	}
+
+	oe_fclose(key_file);
+	return 0;
 }

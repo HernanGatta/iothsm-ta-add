@@ -1,4 +1,5 @@
 #include "edge_hsm_client_store.h"
+#include "hsm_key.h"
 
 //##############################################################################
 // STORE_ENTRY_KEY helpers
@@ -38,6 +39,13 @@ static bool key_exists(const CRYPTO_STORE *store, HSM_KEY_T key_type, const char
 {
     STORE_ENTRY_KEY *entry = get_key(store, key_type, key_name);
     return (entry != NULL) ? true : false;
+}
+
+static void destroy_key(STORE_ENTRY_KEY *key)
+{
+    STRING_delete(key->id);
+    BUFFER_delete(key->key);
+    free(key);
 }
 
 static STORE_ENTRY_KEY* create_key_entry
@@ -277,13 +285,6 @@ static int delete_encryption_key_file(const char *key_name)
     return result;
 }
 
-void destroy_key(STORE_ENTRY_KEY *key)
-{
-    STRING_delete(key->id);
-    BUFFER_delete(key->key);
-    free(key);
-}
-
 void destroy_keys(SINGLYLINKEDLIST_HANDLE keys)
 {
     LIST_ITEM_HANDLE list_item;
@@ -293,44 +294,6 @@ void destroy_keys(SINGLYLINKEDLIST_HANDLE keys)
         destroy_key(key_entry);
         singlylinkedlist_remove(keys, list_item);
     }
-}
-
-int edge_hsm_client_store_insert_sas_key
-(
-    HSM_CLIENT_STORE_HANDLE handle,
-    const char* key_name,
-    const unsigned char* key,
-    size_t key_size
-)
-{
-    int result;
-
-    if (handle == NULL)
-    {
-        LOG_ERROR("Invalid handle parameter");
-        result = __FAILURE__;
-    }
-    else if ((key_name == NULL) || (strlen(key_name) == 0))
-    {
-        LOG_ERROR("Invalid key name parameter");
-        result = __FAILURE__;
-    }
-    else if ((key == NULL) || (key_size == 0))
-    {
-        LOG_ERROR("Invalid key parameters");
-        result = __FAILURE__;
-    }
-    else if (g_hsm_state != HSM_STATE_PROVISIONED)
-    {
-        LOG_ERROR("HSM store has not been provisioned");
-        result = __FAILURE__;
-    }
-    else
-    {
-        result = put_key((CRYPTO_STORE*)handle, HSM_KEY_SAS, key_name, key, key_size);
-    }
-
-    return result;
 }
 
 int edge_hsm_client_store_remove_key
@@ -550,6 +513,44 @@ int edge_hsm_client_store_insert_encryption_key
             }
             free(key);
         }
+    }
+
+    return result;
+}
+
+int edge_hsm_client_store_insert_sas_key
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    const char* key_name,
+    const unsigned char* key,
+    size_t key_size
+)
+{
+    int result;
+
+    if (handle == NULL)
+    {
+        LOG_ERROR("Invalid handle parameter");
+        result = __FAILURE__;
+    }
+    else if ((key_name == NULL) || (strlen(key_name) == 0))
+    {
+        LOG_ERROR("Invalid key name parameter");
+        result = __FAILURE__;
+    }
+    else if ((key == NULL) || (key_size == 0))
+    {
+        LOG_ERROR("Invalid key parameters");
+        result = __FAILURE__;
+    }
+    else if (g_hsm_state != HSM_STATE_PROVISIONED)
+    {
+        LOG_ERROR("HSM store has not been provisioned");
+        result = __FAILURE__;
+    }
+    else
+    {
+        result = put_key((CRYPTO_STORE*)handle, HSM_KEY_SAS, key_name, key, key_size);
     }
 
     return result;

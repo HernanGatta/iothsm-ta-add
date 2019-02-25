@@ -24,7 +24,7 @@ set(source_c_files
     ./src/certificate_info.c
     ./src/constants.c
     ./src/edge_enc_openssl_key.c
-    ./src/edge_hsm_client_store_keys.c
+    ./src/edge_hsm_client_crypto.c
     ./src/edge_hsm_client_store_layout.c
     ./src/edge_hsm_client_store_pki.c
     ./src/edge_hsm_client_store.c
@@ -68,7 +68,8 @@ if(use_enclave)
     oeedl_file(./enc/enc.edl host ENC_GEN ENC_C_GEN ENC_H_GEN ${OE_PATH}/include)
 
     set(source_c_files ${source_c_files}
-        ./src/edge_hsm_client_crypto_ta.c
+        ./src/edge_enc_enclave_key.c
+        ./src/edge_hsm_client_store_keys_ta.c
         ./src/hsm_client_tpm_in_ta.c
         ${ENC_C_GEN})
     set(source_h_files ${source_h_files}
@@ -84,7 +85,7 @@ if(use_enclave)
     endif(MSVC)
 else()
     set(source_c_files ${source_c_files}
-        ./src/edge_hsm_client_crypto.c)
+        ./src/edge_hsm_client_store_keys.c)
 endif(use_enclave)
 
 if(MSVC)

@@ -123,7 +123,7 @@ fn main() {
         .profile("Release")
         .build();
 
-    println!("#And build the Open Enclave SDK");
+    // println!("#And build the Open Enclave SDK");
     let _shared = Config::new(oe_new_platforms)
         .define("OE_TEE", "SGX")
         .define("OE_USE_SIMULATION", "ON")
@@ -170,7 +170,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib64", iothsm.display());
     println!("cargo:rustc-link-lib=iothsm");
 
-    #[cfg(windows)]
+    // #[cfg(windows)]
     fs::copy(
         format!("{}/bin/enc.signed.dll", iothsm.display()),
         format!("{}/../../../deps/enc.signed.dll", iothsm.display()));
@@ -183,7 +183,9 @@ fn main() {
     println!("cargo:rustc-link-lib=utpm");
     #[cfg(debug_assertions)]
     println!("cargo:rustc-link-lib=oehost");
+    #[cfg(debug_assertions)]
     println!("cargo:rustc-link-lib=oesocket_host");
+    #[cfg(debug_assertions)]
     println!("cargo:rustc-link-lib=oestdio_host");
 
     #[cfg(windows)]

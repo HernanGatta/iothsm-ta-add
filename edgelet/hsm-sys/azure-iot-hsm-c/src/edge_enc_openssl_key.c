@@ -64,7 +64,7 @@ static int enc_key_sign
     return __FAILURE__;
 }
 
-int enc_key_derive_and_sign
+static int enc_key_derive_and_sign
 (
     KEY_HANDLE key_handle,
     const unsigned char *data_to_be_signed,

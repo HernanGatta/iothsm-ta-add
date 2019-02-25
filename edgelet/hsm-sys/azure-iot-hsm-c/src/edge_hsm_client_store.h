@@ -13,7 +13,6 @@
 #include "hsm_client_data.h"
 #include "hsm_client_store.h"
 #include "hsm_constants.h"
-#include "hsm_key.h"
 #include "hsm_log.h"
 #include "hsm_utils.h"
 
@@ -37,22 +36,6 @@ struct STORE_ENTRY_KEY_TAG
     BUFFER_HANDLE key;
 };
 typedef struct STORE_ENTRY_KEY_TAG STORE_ENTRY_KEY;
-
-struct STORE_ENTRY_PKI_CERT_TAG
-{
-    STRING_HANDLE id;
-    STRING_HANDLE issuer_id;
-    STRING_HANDLE cert_file;
-    STRING_HANDLE private_key_file;
-};
-typedef struct STORE_ENTRY_PKI_CERT_TAG STORE_ENTRY_PKI_CERT;
-
-struct STORE_ENTRY_PKI_TRUSTED_CERT_TAG
-{
-    STRING_HANDLE id;
-    STRING_HANDLE cert_file;
-};
-typedef struct STORE_ENTRY_PKI_TRUSTED_CERT_TAG STORE_ENTRY_PKI_TRUSTED_CERT;
 
 struct CRYPTO_STORE_ENTRY_TAG
 {
@@ -213,11 +196,6 @@ int edge_hsm_client_store_insert_encryption_key
 (
     HSM_CLIENT_STORE_HANDLE handle,
     const char* key_name
-);
-
-void destroy_key
-(
-    STORE_ENTRY_KEY *key
 );
 
 void destroy_keys
