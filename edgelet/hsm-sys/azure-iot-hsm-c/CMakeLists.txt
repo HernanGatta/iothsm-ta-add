@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(iothsm)
 set (iothsm_VERSION_MAJOR 1)
 set (iothsm_VERSION_MINOR 0)
-set (iothsm_VERSION_PATCH 6)
+set (iothsm_VERSION_PATCH 8)
 
 # User-configurable options.
 option(use_enclave "set use_enclave to ON to support secure enclaves for cryptographic operations (default is OFF)" OFF)
