@@ -71,9 +71,11 @@ if(use_enclave)
         ./src/edge_enc_enclave_key.c
         ./src/edge_hsm_client_store_keys_ta.c
         ./src/hsm_client_tpm_in_ta.c
+        ./src/hsm_enclave.c
         ${ENC_C_GEN})
     set(source_h_files ${source_h_files}
         ./src/hsm_client_tpm_in_ta.h
+        ./src/hsm_enclave.h
         ${ENC_H_GEN})
 
     add_subdirectory(enc)

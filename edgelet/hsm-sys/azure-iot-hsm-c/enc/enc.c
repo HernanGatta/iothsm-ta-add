@@ -16,6 +16,13 @@
 
 #define IDENTITY_KEY_FILE_PATH "/PKI/keys/edgelet-identity.enc.key"
 
+static void bufprint(const unsigned char * buf, const size_t bufsz)
+{
+    for(size_t i = 0 ; i < bufsz ; i++)
+        printf("%#x ", buf[i]);
+	printf("\n");
+}
+
 int get_master_encryption_key(unsigned char* key)
 {
 	OE_FILE* key_file;
@@ -48,14 +55,14 @@ int get_encryption_key(const char* key_file_path, unsigned char* key)
 		key_file_path,
 		"r")) == NULL)
 	{
-		return 1;
+		return -10;
 	}
 
 	if (oe_fread(key, 1, MASTER_ENCRYPTION_KEY_SIZE_BYTES, key_file) !=
 		MASTER_ENCRYPTION_KEY_SIZE_BYTES)
 	{
 		oe_fclose(key_file);
-		return 1;
+		return -11;
 	}
 
 	oe_fclose(key_file);
@@ -206,6 +213,7 @@ int ecall_Decrypt(
 	unsigned char* output_buffer,
 	size_t output_buffer_size)
 {
+	int r;
 	mbedtls_gcm_context gcm;
 	unsigned char key[MASTER_ENCRYPTION_KEY_SIZE_BYTES];
 	const unsigned char* version = ciphertext_buffer;
@@ -216,23 +224,25 @@ int ecall_Decrypt(
 
 	if (key_file == NULL || ciphertext_buffer == NULL || aad == NULL || iv == NULL || output_buffer == NULL)
 	{
-		return 1;
+		return -1;
 	}
 
 	if (output_buffer_size < ciphertext_size)
 	{
-		return 1;
+		return -2;
 	}
 
 	if (*version != CIPHER_VERSION_V1)
 	{
-		return 1;
+		return -3;
 	}
 
-	if (get_encryption_key(key_file, key) != 0)
+	if ((r = get_encryption_key(key_file, key)) != 0)
 	{
-		return 1;
+		return r;
 	}
+
+	memset(output_buffer, 0, output_buffer_size);
 
 	mbedtls_gcm_init(&gcm);
 	if (mbedtls_gcm_setkey(
@@ -241,10 +251,10 @@ int ecall_Decrypt(
 		key,
 		MASTER_ENCRYPTION_KEY_SIZE_BYTES * 8) != 0)
 	{
-		return 1;
+		return -5;
 	}
 
-	if (mbedtls_gcm_auth_decrypt(
+	if ((r=mbedtls_gcm_auth_decrypt(
 		&gcm,
 		ciphertext_size,
 		iv,
@@ -254,9 +264,9 @@ int ecall_Decrypt(
 		tag,
 		CIPHER_TAG_V1_SIZE_BYTES,
 		ciphertext,
-		output_buffer) != 0)
+		output_buffer)) != 0)
 	{
-		return 1;
+		return r;
 	}
 
 	return 0;
@@ -368,6 +378,9 @@ int ecall_TaDeriveAndSignData(
 		goto exit;
 	}
 
+	printf("INSIDE %s: KEY IS:\n", __FUNCTION__);
+	bufprint(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES);
+
 	// TODO: use the TPM for this
 	if (mbedtls_md_hmac(
 		mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),
@@ -413,6 +426,7 @@ int ecall_Encrypt(
 	unsigned char* output_buffer,
 	size_t output_buffer_size)
 {
+	int r;
 	mbedtls_gcm_context gcm;
 	unsigned char key[MASTER_ENCRYPTION_KEY_SIZE_BYTES];
 	unsigned char* version = output_buffer;
@@ -421,18 +435,21 @@ int ecall_Encrypt(
 
 	if (key_file == NULL || plaintext == NULL || aad == NULL || iv == NULL || output_buffer == NULL)
 	{
-		return 1;
+		return -1;
 	}
 
 	if (output_buffer_size < plaintext_len + CIPHER_HEADER_V1_SIZE_BYTES)
 	{
-		return 1;
+		return -2;
 	}
 
-	if (get_encryption_key(key_file, key) != 0)
+	if ((r = get_encryption_key(key_file, key)) != 0)
 	{
-		return 1;
+		return r;
 	}
+
+	printf("INSIDE %s: KEY IS:\n", __FUNCTION__);
+	bufprint(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES);
 
 	mbedtls_gcm_init(&gcm);
 	if (mbedtls_gcm_setkey(
@@ -441,7 +458,7 @@ int ecall_Encrypt(
 		key,
 		MASTER_ENCRYPTION_KEY_SIZE_BYTES * 8) != 0)
 	{
-		return 1;
+		return -4;
 	}
 
 	*version = CIPHER_VERSION_V1;
@@ -458,7 +475,7 @@ int ecall_Encrypt(
 		CIPHER_TAG_V1_SIZE_BYTES,
 		tag) != 0)
 	{
-		return 1;
+		return -5;
 	}
 
 	return 0;
@@ -472,24 +489,28 @@ int ecall_CreateEncryptionKey(
 
 	if (oe_random(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES) != OE_OK)
 	{
-		return 1;
+		return -1;
 	}
+
+	printf("INSIDE %s: KEY IS:\n", __FUNCTION__);
+	bufprint(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES);
 
 	if ((key_file = oe_fopen(
 		OE_FILE_SECURE_BEST_EFFORT,
 		filepath,
 		"w")) == NULL)
 	{
-		return 1;
+		return -2;
 	}
 
 	if (oe_fwrite(key, 1, MASTER_ENCRYPTION_KEY_SIZE_BYTES, key_file) !=
 		MASTER_ENCRYPTION_KEY_SIZE_BYTES)
 	{
 		oe_fclose(key_file);
-		return 1;
+		return -3;
 	}
 
+	oe_fclose(key_file);
 	return 0;
 }
 
@@ -501,9 +522,9 @@ int ecall_VerifyEncryptionKey(
 	if ((key_file = oe_fopen(
 		OE_FILE_SECURE_BEST_EFFORT,
 		filepath,
-		"w")) == NULL)
+		"r")) == NULL)
 	{
-		return 1;
+		return -1;
 	}
 
 	oe_fclose(key_file);
@@ -515,14 +536,10 @@ int ecall_DeleteEncryptionKey(
 {
 	OE_FILE* key_file;
 
-	if ((key_file = oe_fopen(
-		OE_FILE_SECURE_BEST_EFFORT,
-		filepath,
-		"w")) == NULL)
+	if (oe_remove(OE_FILE_SECURE_BEST_EFFORT, filepath) != 0)
 	{
-		return 1;
+		return -1;
 	}
 
-	oe_fclose(key_file);
 	return 0;
 }

@@ -171,6 +171,7 @@ int edge_hsm_client_store_remove_key
     const char* key_name
 )
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (handle == NULL)
@@ -212,11 +213,17 @@ int edge_hsm_client_store_remove_key
                     LOG_ERROR("HSM store could not construct path to key");
                     result = __FAILURE__;
                 }
+                else if (verify_enclave_encryption_key(key_file_handle) == 0 &&
+                         delete_enclave_encryption_key(key_file_handle) != 0)
+                {
+                    LOG_ERROR("Could not delete key file");
+                    result = __FAILURE__;
+                }
                 else
                 {
-                    result = delete_enclave_encryption_key(key_file_handle);
+                    result = 0;
                 }
-
+                
                 STRING_delete(key_file_handle);
             }
         }
@@ -234,6 +241,7 @@ int edge_hsm_client_store_remove_key
         }
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -244,6 +252,7 @@ KEY_HANDLE edge_hsm_client_open_key
     const char* key_name
 )
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     KEY_HANDLE result;
 
     if (handle == NULL)
@@ -323,11 +332,13 @@ KEY_HANDLE edge_hsm_client_open_key
         }
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 int edge_hsm_client_close_key(HSM_CLIENT_STORE_HANDLE handle, KEY_HANDLE key_handle)
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (handle == NULL)
@@ -351,6 +362,7 @@ int edge_hsm_client_close_key(HSM_CLIENT_STORE_HANDLE handle, KEY_HANDLE key_han
         result = 0;
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -360,6 +372,8 @@ int edge_hsm_client_store_insert_encryption_key
     const char* key_name
 )
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
+
     int result;
 
     STRING_HANDLE key_file_handle;
@@ -394,17 +408,17 @@ int edge_hsm_client_store_insert_encryption_key
         else if (verify_enclave_encryption_key(key_file_handle) == 0)
         {
             LOG_DEBUG("HSM store already has encryption key set %s", key_name);
-            result = __FAILURE__;
+            result = 0;
         }
         else
         {
             result = generate_save_enclave_encryption_key(key_file_handle);
-            STRING_delete(key_file_handle);
         }
         
         STRING_delete(key_file_handle);
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 

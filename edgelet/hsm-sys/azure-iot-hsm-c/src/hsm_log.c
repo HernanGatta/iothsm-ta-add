@@ -5,7 +5,7 @@
 #include "hsm_log.h"
 #define MAX_LOG_SIZE 256
 
-static int log_level = LVL_ERROR;
+static int log_level = LVL_DEBUG;
 
 void set_log_level(int level)
 {
