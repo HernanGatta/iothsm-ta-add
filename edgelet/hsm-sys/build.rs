@@ -124,12 +124,12 @@ fn main() {
         .build();
 
     // println!("#And build the Open Enclave SDK");
-    // let _shared = Config::new(oe_new_platforms)
-    //     .define("OE_TEE", "SGX")
-    //     .define("OE_USE_SIMULATION", "ON")
-    //     .set_platform_defines()
-    //     .profile("Release")
-    //     .build();
+    let _shared = Config::new(oe_new_platforms)
+        .define("OE_TEE", "SGX")
+        .define("OE_USE_SIMULATION", "ON")
+        .set_platform_defines()
+        .profile("Release")
+        .build();
 
     // make the C libary at azure-iot-hsm-c (currently a subdirectory in this
     // crate)
