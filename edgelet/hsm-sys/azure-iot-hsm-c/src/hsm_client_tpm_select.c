@@ -34,6 +34,7 @@ static int strcmp_i(const char* lhs, const char* rhs)
 // to use an enclave for TPM functionality.
 static int use_tpm_device(bool *use_tpm, bool *use_enclave)
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     static const char * user_says_no[] = { "", "off", "no", "false" };
     int array_size = sizeof(user_says_no)/sizeof(user_says_no[0]);
     int result;
@@ -77,6 +78,9 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
         result = 0;
     }
 
+    LOG_DEBUG("INSIDE: %s - Use TPM (%i)", __FUNCTION__, *use_tpm);
+    LOG_DEBUG("INSIDE: %s - Use Enclave (%i)", __FUNCTION__, *use_enclave);
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -85,6 +89,7 @@ static bool g_use_enclave = false;
 
 int hsm_client_tpm_init(void)
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
     bool use_tpm_flag = false;
     bool use_enclave_flag = false;
@@ -119,11 +124,13 @@ int hsm_client_tpm_init(void)
         }
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 void hsm_client_tpm_deinit(void)
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     if (g_use_tpm_device)
     {
         hsm_client_tpm_device_deinit();
@@ -138,23 +145,28 @@ void hsm_client_tpm_deinit(void)
     {
         hsm_client_tpm_store_deinit();
     }
+    LOG_DEBUG("EXIT: %s", __FUNCTION__);
 }
 
 const HSM_CLIENT_TPM_INTERFACE* hsm_client_tpm_interface(void)
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     const HSM_CLIENT_TPM_INTERFACE* result;
     if (g_use_tpm_device)
     {
+        LOG_DEBUG("INSIDE: %s - hsm_client_tpm_device_interface", __FUNCTION__);
         result = hsm_client_tpm_device_interface();
     }
 #if defined(HSM_USE_TEE)
     else if (g_use_enclave)
     {
+        LOG_DEBUG("INSIDE: %s - hsm_client_tpm_ta_interface", __FUNCTION__);
         result = hsm_client_tpm_ta_interface();
     }
 #endif  // HSM_USE_TEE
     else
     {
+        LOG_DEBUG("INSIDE: %s - hsm_client_tpm_store_interface", __FUNCTION__);
         result = hsm_client_tpm_store_interface();
     }
     return result;

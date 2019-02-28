@@ -136,6 +136,7 @@ static int remove_key
 static int put_key
 (
     CRYPTO_STORE *store,
+    HSM_KEY_T key_type,
     const char *key_name,
     const unsigned char* key,
     size_t key_size
@@ -143,7 +144,8 @@ static int put_key
 {
     int result;
     STORE_ENTRY_KEY *key_entry;
-    SINGLYLINKEDLIST_HANDLE key_list = store->store_entry->sym_enc_keys;
+    SINGLYLINKEDLIST_HANDLE key_list = (key_type == HSM_KEY_SAS) ? store->store_entry->sas_keys :
+                                                                   store->store_entry->sym_enc_keys;
     (void)singlylinkedlist_remove_if(key_list, remove_key_entry_cb, key_name);
     if ((key_entry = create_key_entry(key_name, key, key_size)) == NULL)
     {
@@ -430,6 +432,7 @@ int edge_hsm_client_store_insert_sas_key
     size_t key_size
 )
 {
+    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (handle == NULL)
@@ -454,8 +457,9 @@ int edge_hsm_client_store_insert_sas_key
     }
     else
     {
-        result = put_key((CRYPTO_STORE*)handle, key_name, key, key_size);
+        result = put_key((CRYPTO_STORE*)handle, HSM_KEY_SAS, key_name, key, key_size);
     }
 
+    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
