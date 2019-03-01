@@ -1,5 +1,18 @@
 #include "edge_hsm_client_store.h"
 
+#if defined __WINDOWS__ || defined _WIN32 || defined _WIN64 || defined _Windows
+    static const char *SLASH = "\\";
+#else
+    static const char *SLASH = "/";
+#endif
+
+static const char *CERTS_DIR        = "certs";
+static const char *CERT_KEYS_DIR    = "cert_keys";
+static const char *ENC_KEYS_DIR     = "enc_keys";
+static const char *CERT_FILE_EXT    = ".cert.pem";
+static const char *PK_FILE_EXT      = ".key.pem";
+static const char *ENC_KEY_FILE_EXT = ".enc.key";
+
 static STRING_HANDLE compute_b64_sha_digest_string
 (
     const unsigned char* ip_buffer,

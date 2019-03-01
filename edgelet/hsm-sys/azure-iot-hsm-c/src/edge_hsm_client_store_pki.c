@@ -564,6 +564,94 @@ static int remove_if_cert_and_key_exist_by_alias
     return result;
 }
 
+static int verify_certificate_helper
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    const char *alias,
+    const char *issuer_alias,
+    const char *cert_file_path,
+    const char *key_file_path,
+    bool *cert_verified
+)
+{
+    int result;
+    int cmp = strcmp(alias, issuer_alias);
+
+    if (cmp == 0)
+    {
+        result = verify_certificate(cert_file_path, key_file_path, cert_file_path, cert_verified);
+    }
+    else
+    {
+        STRING_HANDLE issuer_cert_path_handle = NULL;
+        CRYPTO_STORE *store = (CRYPTO_STORE*)handle;
+        STORE_ENTRY_PKI_CERT *cert_entry;
+
+        const char *issuer_cert_path = NULL;
+        if ((cert_entry = get_pki_cert(store, issuer_alias)) != NULL)
+        {
+            LOG_DEBUG("Certificate already loaded in store for alias %s", issuer_alias);
+            issuer_cert_path = STRING_c_str(cert_entry->cert_file);
+        }
+        else
+        {
+            if ((issuer_cert_path_handle = STRING_new()) == NULL)
+            {
+                LOG_ERROR("Could not construct string handle to hold the certificate");
+            }
+            else if (build_cert_file_paths(issuer_alias, issuer_cert_path_handle, NULL) != 0)
+            {
+                LOG_ERROR("Could not create file paths to issuer certificate alias %s", issuer_alias);
+            }
+            else
+            {
+                issuer_cert_path = STRING_c_str(issuer_cert_path_handle);
+            }
+        }
+
+        if ((issuer_cert_path == NULL) || !is_file_valid(issuer_cert_path))
+        {
+            LOG_ERROR("Could not find issuer certificate file %s", issuer_cert_path);
+            result = __FAILURE__;
+        }
+        else if (verify_certificate(cert_file_path, key_file_path, issuer_cert_path, cert_verified) != 0)
+        {
+            LOG_ERROR("Error trying to verify certificate %s for alias %s", cert_file_path, alias);
+            result = __FAILURE__;
+        }
+        else
+        {
+            result = 0;
+        }
+
+        if (issuer_cert_path_handle != NULL)
+        {
+            STRING_delete(issuer_cert_path_handle);
+        }
+    }
+
+    return result;
+}
+
+static int edge_hsm_client_store_insert_pki_cert
+(
+    HSM_CLIENT_STORE_HANDLE handle,
+    const char *alias,
+    const char *issuer_alias,
+    const char *cert_file_path,
+    const char *key_file_path
+)
+{
+    CRYPTO_STORE *store = (CRYPTO_STORE*)handle;
+    int result = put_pki_cert(store, alias, issuer_alias, cert_file_path, key_file_path);
+    if (result != 0)
+    {
+        LOG_ERROR("Could not put PKI certificate and key into the store for %s", alias);
+    }
+
+    return result;
+}
+
 static int load_if_cert_and_key_exist_by_alias
 (
     HSM_CLIENT_STORE_HANDLE handle,
@@ -843,94 +931,6 @@ static int remove_cert_by_alias(HSM_CLIENT_STORE_HANDLE handle, const char* alia
     else
     {
         result = remove_if_cert_and_key_exist_by_alias((CRYPTO_STORE*)handle, alias);
-    }
-
-    return result;
-}
-
-static int verify_certificate_helper
-(
-    HSM_CLIENT_STORE_HANDLE handle,
-    const char *alias,
-    const char *issuer_alias,
-    const char *cert_file_path,
-    const char *key_file_path,
-    bool *cert_verified
-)
-{
-    int result;
-    int cmp = strcmp(alias, issuer_alias);
-
-    if (cmp == 0)
-    {
-        result = verify_certificate(cert_file_path, key_file_path, cert_file_path, cert_verified);
-    }
-    else
-    {
-        STRING_HANDLE issuer_cert_path_handle = NULL;
-        CRYPTO_STORE *store = (CRYPTO_STORE*)handle;
-        STORE_ENTRY_PKI_CERT *cert_entry;
-
-        const char *issuer_cert_path = NULL;
-        if ((cert_entry = get_pki_cert(store, issuer_alias)) != NULL)
-        {
-            LOG_DEBUG("Certificate already loaded in store for alias %s", issuer_alias);
-            issuer_cert_path = STRING_c_str(cert_entry->cert_file);
-        }
-        else
-        {
-            if ((issuer_cert_path_handle = STRING_new()) == NULL)
-            {
-                LOG_ERROR("Could not construct string handle to hold the certificate");
-            }
-            else if (build_cert_file_paths(issuer_alias, issuer_cert_path_handle, NULL) != 0)
-            {
-                LOG_ERROR("Could not create file paths to issuer certificate alias %s", issuer_alias);
-            }
-            else
-            {
-                issuer_cert_path = STRING_c_str(issuer_cert_path_handle);
-            }
-        }
-
-        if ((issuer_cert_path == NULL) || !is_file_valid(issuer_cert_path))
-        {
-            LOG_ERROR("Could not find issuer certificate file %s", issuer_cert_path);
-            result = __FAILURE__;
-        }
-        else if (verify_certificate(cert_file_path, key_file_path, issuer_cert_path, cert_verified) != 0)
-        {
-            LOG_ERROR("Error trying to verify certificate %s for alias %s", cert_file_path, alias);
-            result = __FAILURE__;
-        }
-        else
-        {
-            result = 0;
-        }
-
-        if (issuer_cert_path_handle != NULL)
-        {
-            STRING_delete(issuer_cert_path_handle);
-        }
-    }
-
-    return result;
-}
-
-static int edge_hsm_client_store_insert_pki_cert
-(
-    HSM_CLIENT_STORE_HANDLE handle,
-    const char *alias,
-    const char *issuer_alias,
-    const char *cert_file_path,
-    const char *key_file_path
-)
-{
-    CRYPTO_STORE *store = (CRYPTO_STORE*)handle;
-    int result = put_pki_cert(store, alias, issuer_alias, cert_file_path, key_file_path);
-    if (result != 0)
-    {
-        LOG_ERROR("Could not put PKI certificate and key into the store for %s", alias);
     }
 
     return result;
