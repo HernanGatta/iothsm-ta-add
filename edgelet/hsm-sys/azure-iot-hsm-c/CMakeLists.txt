@@ -67,7 +67,7 @@ if(use_enclave)
 
     set(source_c_files ${source_c_files}
         ./src/edge_enc_enclave_key.c
-        ./src/edge_hsm_client_store_keys_ta.c
+        ./src/edge_hsm_client_store_keys_enclave.c
         ./src/edge_sas_enclave_key.c
         ./src/hsm_enclave.c
         ${ENC_C_GEN})

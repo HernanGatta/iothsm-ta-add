@@ -17,13 +17,6 @@
 // Helper Functions
 //
 
-static void bufprint(const unsigned char * buf, const size_t bufsz)
-{
-    for(size_t i = 0 ; i < bufsz ; i++)
-        printf("%#x ", buf[i]);
-    printf("\n");
-}
-
 static int get_encryption_key
 (
     const char* key_file_path,
@@ -101,9 +94,6 @@ int ecall_CreateEncryptionKey(const char* filepath)
     {
         return 1;
     }
-
-    printf("INSIDE %s: KEY IS:\n", __FUNCTION__);
-    bufprint(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES);
 
     if ((key_file = oe_fopen(
         OE_FILE_SECURE_BEST_EFFORT,
@@ -185,9 +175,6 @@ int ecall_Encrypt
     {
         return 1;
     }
-
-    printf("INSIDE %s: KEY IS:\n", __FUNCTION__);
-    bufprint(key, MASTER_ENCRYPTION_KEY_SIZE_BYTES);
 
     mbedtls_gcm_init(&gcm);
     if (mbedtls_gcm_setkey(
@@ -394,6 +381,7 @@ exit:
     {
         free(key);
     }
+
     return result;
 }
 
@@ -457,6 +445,6 @@ exit:
     {
         free(key);
     }
-    return result;
 
+    return result;
 }

@@ -20,9 +20,8 @@ static int sas_key_sign
     size_t* digest_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
+
     SAS_KEY *sas_key = (SAS_KEY*)key_handle;
 
     if (sas_key == NULL)
@@ -51,10 +50,6 @@ static int sas_key_sign
             LOG_ERROR("Sign ecall failed");
             result = __FAILURE__;
         }
-        else
-        {
-            result = 0;
-        }
     }
 
     if (result != 0 && *digest != NULL)
@@ -65,7 +60,6 @@ static int sas_key_sign
         *digest_size = 0;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -80,9 +74,8 @@ static int sas_key_derive_and_sign
     size_t* digest_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
+
     SAS_KEY* sas_key = (SAS_KEY*)key_handle;
 
     *digest_size = MD_OUTPUT_SIZE;
@@ -106,10 +99,6 @@ static int sas_key_derive_and_sign
         LOG_ERROR("DeriveAndSign ecall failed");
         result = __FAILURE__;
     }
-    else
-    {
-        result = 0;
-    }
 
     if (result != 0 && *digest != NULL)
     {
@@ -119,7 +108,6 @@ static int sas_key_derive_and_sign
         *digest_size = 0;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -172,10 +160,8 @@ static void sas_key_destroy(KEY_HANDLE key_handle)
 
 int verify_enclave_sas_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
@@ -190,7 +176,6 @@ int verify_enclave_sas_key(STRING_HANDLE key_file)
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -201,11 +186,8 @@ int import_enclave_sas_key
     size_t key_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
@@ -222,17 +204,13 @@ int import_enclave_sas_key
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 int delete_enclave_sas_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
@@ -247,17 +225,12 @@ int delete_enclave_sas_key(STRING_HANDLE key_file)
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 KEY_HANDLE create_enclave_sas_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
-    int result = 0;
-
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
+    int result;
 
     SAS_KEY* sas_key;
     if (key_file == NULL)
@@ -298,6 +271,5 @@ KEY_HANDLE create_enclave_sas_key(STRING_HANDLE key_file)
         }
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return (KEY_HANDLE)sas_key;
 }

@@ -13,7 +13,6 @@ typedef struct ENC_KEY_TAG ENC_KEY;
 
 static bool validate_input_param_buffer(const SIZED_BUFFER *sb, const char *name)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     bool result = true;
 
     if ((sb == NULL) || (sb->buffer == NULL))
@@ -27,13 +26,11 @@ static bool validate_input_param_buffer(const SIZED_BUFFER *sb, const char *name
         result = false;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 static bool validate_input_ciphertext_buffer(const SIZED_BUFFER *sb, unsigned char *version)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     bool result;
 
     if ((sb == NULL) || (sb->buffer == NULL))
@@ -57,7 +54,6 @@ static bool validate_input_ciphertext_buffer(const SIZED_BUFFER *sb, unsigned ch
         result = true;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -70,7 +66,6 @@ static int enc_key_sign
     size_t *digest_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     (void)key_handle;
     (void)data_to_be_signed;
     (void)data_to_be_signed_size;
@@ -84,7 +79,7 @@ static int enc_key_sign
     {
         *digest_size = 0;
     }
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, __FAILURE__);
+
     return __FAILURE__;
 }
 
@@ -99,7 +94,6 @@ static int enc_key_derive_and_sign
     size_t *digest_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     (void)key_handle;
     (void)data_to_be_signed;
     (void)data_to_be_signed_size;
@@ -115,15 +109,8 @@ static int enc_key_derive_and_sign
     {
         *digest_size = 0;
     }
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, __FAILURE__);
-    return __FAILURE__;
-}
 
-static void bufprint(const unsigned char * buf, const size_t bufsz)
-{
-    for(size_t i = 0 ; i < bufsz ; i++)
-        printf("%#x ", buf[i]);
-	printf("\n");
+    return __FAILURE__;
 }
 
 static int enc_key_encrypt
@@ -135,7 +122,6 @@ static int enc_key_encrypt
     SIZED_BUFFER *ciphertext
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (ciphertext == NULL)
@@ -157,7 +143,7 @@ static int enc_key_encrypt
         else
         {
             ENC_KEY *enc_key = (ENC_KEY*)key_handle;
-            LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(enc_key->key_file));
+
             ciphertext->size = plaintext->size + CIPHER_HEADER_V1_SIZE_BYTES;
             ciphertext->buffer = malloc(ciphertext->size);
             if (ciphertext->buffer == NULL)
@@ -181,11 +167,6 @@ static int enc_key_encrypt
                 LOG_ERROR("Encrypt ecall failed");
                 result = __FAILURE__;
             }
-            else
-            {
-                LOG_DEBUG("INSIDE: %s -- ct follows:", __FUNCTION__);
-                bufprint(ciphertext->buffer, ciphertext->size);
-            }
         }
     }
 
@@ -195,7 +176,6 @@ static int enc_key_encrypt
         ciphertext->buffer = NULL;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -208,7 +188,6 @@ static int enc_key_decrypt
     SIZED_BUFFER *plaintext
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (plaintext == NULL)
@@ -230,14 +209,12 @@ static int enc_key_decrypt
         }
         else
         {
-            LOG_DEBUG("INSIDE: %s -- ct follows:", __FUNCTION__);
-            bufprint(ciphertext->buffer, ciphertext->size);
-
             ENC_KEY *enc_key = (ENC_KEY*)key_handle;
-            LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(enc_key->key_file));
+
             plaintext->size = ciphertext->size - CIPHER_HEADER_V1_SIZE_BYTES;
             plaintext->buffer = malloc(plaintext->size);
-            if (plaintext->buffer == NULL) {
+            if (plaintext->buffer == NULL)
+            {
                 LOG_ERROR("Could not allocate memory to decrypt data");
                 result =  __FAILURE__;
             }
@@ -257,10 +234,6 @@ static int enc_key_decrypt
                 LOG_ERROR("Decrypt ecall failed");
                 result = __FAILURE__;
             }
-            else
-            {
-                LOG_DEBUG("INSIDE: %s -- pt %s", __FUNCTION__, plaintext->buffer);
-            }
         }
     }
 
@@ -270,14 +243,11 @@ static int enc_key_decrypt
         plaintext->buffer = NULL;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 static void enc_key_destroy(KEY_HANDLE key_handle)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     ENC_KEY *enc_key = (ENC_KEY*)key_handle;
 
     if (enc_key != NULL)
@@ -288,16 +258,12 @@ static void enc_key_destroy(KEY_HANDLE key_handle)
         }
         free(enc_key);
     }
-
-    LOG_DEBUG("EXIT: %s", __FUNCTION__);
 }
 
 int verify_enclave_encryption_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
@@ -312,16 +278,13 @@ int verify_enclave_encryption_key(STRING_HANDLE key_file)
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 int generate_save_enclave_encryption_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
@@ -336,42 +299,32 @@ int generate_save_enclave_encryption_key(STRING_HANDLE key_file)
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 int delete_enclave_encryption_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
-    oe_result_t oe_res;
 
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
     if (key_file == NULL)
     {
         LOG_ERROR("Invalid key file parameter");
         result = __FAILURE__;
     }
-    else if ((oe_res = ecall_DeleteEncryptionKey(
+    else if (ecall_DeleteEncryptionKey(
         hsm_enclave_get_instance(),
         &result,
-        STRING_c_str(key_file))) != OE_OK)
+        STRING_c_str(key_file)) != OE_OK)
     {
-        LOG_ERROR("DeleteEncryptionKey ecall failed: %u", oe_res);
+        LOG_ERROR("DeleteEncryptionKey ecall failed");
         result = __FAILURE__;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 KEY_HANDLE create_enclave_encryption_key(STRING_HANDLE key_file)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
-    int result = 0;
-    LOG_DEBUG("INSIDE: %s -- key file %s", __FUNCTION__, STRING_c_str(key_file));
-
     ENC_KEY* enc_key;
 
     if (key_file == NULL)
@@ -381,6 +334,8 @@ KEY_HANDLE create_enclave_encryption_key(STRING_HANDLE key_file)
     }
     else
     {
+        int result;
+
         enc_key = (ENC_KEY*)malloc(sizeof(ENC_KEY));
         if (enc_key == NULL)
         {
@@ -412,6 +367,5 @@ KEY_HANDLE create_enclave_encryption_key(STRING_HANDLE key_file)
         }
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return (KEY_HANDLE)enc_key;
 }

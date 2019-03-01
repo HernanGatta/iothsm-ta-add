@@ -3,22 +3,9 @@
 #include "edge_sas_enclave_key.h"
 #include "hsm_enclave_key.h"
 
-static void destroy_key(STORE_ENTRY_KEY *key)
-{
-    STRING_delete(key->id);
-    BUFFER_delete(key->key);
-    free(key);
-}
-
 void destroy_keys(SINGLYLINKEDLIST_HANDLE keys)
 {
-    LIST_ITEM_HANDLE list_item;
-    while ((list_item = singlylinkedlist_get_head_item(keys)) != NULL)
-    {
-        STORE_ENTRY_KEY *key_entry = (STORE_ENTRY_KEY*)singlylinkedlist_item_get_value(list_item);
-        destroy_key(key_entry);
-        singlylinkedlist_remove(keys, list_item);
-    }
+    (void)keys;
 }
 
 int edge_hsm_client_store_remove_key
@@ -28,7 +15,6 @@ int edge_hsm_client_store_remove_key
     const char* key_name
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (handle == NULL)
@@ -102,7 +88,6 @@ int edge_hsm_client_store_remove_key
         }
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -113,7 +98,6 @@ KEY_HANDLE edge_hsm_client_open_key
     const char* key_name
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     KEY_HANDLE result;
 
     if (handle == NULL)
@@ -144,7 +128,7 @@ KEY_HANDLE edge_hsm_client_open_key
             LOG_ERROR("HSM store could not create string to hold file path to key %s", key_name);
             result = NULL;
         }
-        else 
+        else
         {
             if (build_enc_key_file_path(key_name, key_file_handle) != 0)
             {
@@ -180,13 +164,11 @@ KEY_HANDLE edge_hsm_client_open_key
         }
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 int edge_hsm_client_close_key(HSM_CLIENT_STORE_HANDLE handle, KEY_HANDLE key_handle)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
 
     if (handle == NULL)
@@ -210,7 +192,6 @@ int edge_hsm_client_close_key(HSM_CLIENT_STORE_HANDLE handle, KEY_HANDLE key_han
         result = 0;
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -220,8 +201,6 @@ int edge_hsm_client_store_insert_encryption_key
     const char* key_name
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
 
     STRING_HANDLE key_file_handle;
@@ -262,11 +241,10 @@ int edge_hsm_client_store_insert_encryption_key
         {
             result = generate_save_enclave_encryption_key(key_file_handle);
         }
-        
+
         STRING_delete(key_file_handle);
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -278,8 +256,6 @@ int edge_hsm_client_store_insert_sas_key
     size_t key_size
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
-
     int result;
 
     STRING_HANDLE key_file_handle;
@@ -330,6 +306,5 @@ int edge_hsm_client_store_insert_sas_key
         STRING_delete(key_file_handle);
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }

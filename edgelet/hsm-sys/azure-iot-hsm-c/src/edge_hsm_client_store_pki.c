@@ -1339,7 +1339,7 @@ int edge_hsm_client_store_insert_pki_trusted_cert
 
 CERT_INFO_HANDLE edge_hsm_client_store_get_pki_trusted_certs
 (
-	HSM_CLIENT_STORE_HANDLE handle
+    HSM_CLIENT_STORE_HANDLE handle
 )
 {
     CERT_INFO_HANDLE result;
@@ -1362,7 +1362,7 @@ CERT_INFO_HANDLE edge_hsm_client_store_get_pki_trusted_certs
 
 int edge_hsm_client_store_remove_pki_trusted_cert
 (
-	HSM_CLIENT_STORE_HANDLE handle,
+    HSM_CLIENT_STORE_HANDLE handle,
     const char *alias
 )
 {
