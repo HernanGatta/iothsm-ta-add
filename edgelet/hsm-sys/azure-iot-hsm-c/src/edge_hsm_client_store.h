@@ -1,4 +1,5 @@
-#pragma once
+#ifndef EDGE_HSM_CLIENT_STORE_H
+#define EDGE_HSM_CLIENT_STORE_H
 
 #include <limits.h>
 #include <stdlib.h>
@@ -61,19 +62,6 @@ typedef enum HSM_STATE_TAG_T
     HSM_STATE_PROVISIONING_ERROR
 } HSM_STATE_T;
 
-#if defined __WINDOWS__ || defined _WIN32 || defined _WIN64 || defined _Windows
-    static const char *SLASH = "\\";
-#else
-    static const char *SLASH = "/";
-#endif
-
-static const char *CERTS_DIR        = "certs";
-static const char *CERT_KEYS_DIR    = "cert_keys";
-static const char *ENC_KEYS_DIR     = "enc_keys";
-static const char *CERT_FILE_EXT    = ".cert.pem";
-static const char *PK_FILE_EXT      = ".key.pem";
-static const char *ENC_KEY_FILE_EXT = ".enc.key";
-
 extern HSM_STATE_T g_hsm_state;
 
 extern CRYPTO_STORE* g_crypto_store;
@@ -82,15 +70,6 @@ extern int g_store_ref_count;
 //##############################################################################
 // Forward declarations
 //##############################################################################
-
-int edge_hsm_client_store_insert_pki_cert
-(
-    HSM_CLIENT_STORE_HANDLE handle,
-    const char *alias,
-    const char *issuer_alias,
-    const char *cert_file_path,
-    const char *key_file_path
-);
 
 int edge_hsm_client_store_create_pki_cert
 (
@@ -135,16 +114,6 @@ void destroy_pki_certs
 void destroy_pki_trusted_certs
 (
     SINGLYLINKEDLIST_HANDLE trusted_certs
-);
-
-static int verify_certificate_helper
-(
-    HSM_CLIENT_STORE_HANDLE handle,
-    const char *alias,
-    const char *issuer_alias,
-    const char *cert_file_path,
-    const char *key_file_path,
-    bool *verification_status
 );
 
 const char* get_base_dir(void);
@@ -202,3 +171,5 @@ void destroy_keys
 (
     SINGLYLINKEDLIST_HANDLE keys
 );
+
+#endif //EDGE_HSM_CLIENT_STORE_H

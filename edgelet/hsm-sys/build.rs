@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 extern crate cmake;
 
+#[cfg(windows)]
 use std::fs;
+
 use std::env;
 use std::path::Path;
 use std::process::Command;
@@ -151,27 +153,22 @@ fn main() {
     };
 
     println!("#Start building HSM dev-mode library");
-    let mut iothsm_config = Config::new("azure-iot-hsm-c");
+    let mut iothsmcfg = Config::new("azure-iot-hsm-c");
 
-    let iothsm_base = iothsm_config
-        .define(SSL_OPTION, "ON")
-        .define("CMAKE_BUILD_TYPE", "Release")
-        .define("run_unittests", rut)
-        .define("use_default_uuid", "ON")
-        .define("use_http", "OFF")
-        .define("skip_samples", "ON");
+    iothsmcfg.define(SSL_OPTION, "ON")
+             .define("CMAKE_BUILD_TYPE", "Release")
+             .define("run_unittests", rut)
+             .define("use_default_uuid", "ON")
+             .define("use_http", "OFF")
+             .define("skip_samples", "ON");
 
-    let iothsm_additional_defines =  if use_enclave {
-        iothsm_base
-            .define("use_enclave", "ON")
-            .define("OE_TEE", "SGX")
-            .define("OE_USE_SIMULATION", "ON")
-    } else {
-        iothsm_base
-    };
+    if use_enclave {
+        iothsmcfg.define("use_enclave", "ON")
+                 .define("OE_TEE", "SGX")
+                 .define("OE_USE_SIMULATION", "ON");
+    }
 
-    let iothsm = iothsm_additional_defines
-        .set_platform_defines()
+    let iothsm = iothsmcfg.set_platform_defines()
         .set_build_shared()
         .profile("Release")
         .build();

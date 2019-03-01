@@ -7,7 +7,9 @@
 
 extern crate num_cpus;
 
+#[cfg(windows)]
 use std::fs;
+
 use std::env;
 use std::path::Path;
 use std::process::Command;

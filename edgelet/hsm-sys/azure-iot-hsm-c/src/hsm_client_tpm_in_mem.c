@@ -22,7 +22,6 @@ static bool g_is_tpm_initialized = false;
 
 int hsm_client_tpm_store_init(void)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
     int status;
 
@@ -58,13 +57,11 @@ int hsm_client_tpm_store_init(void)
         LOG_ERROR("Re-initializing TPM without de-initializing");
         result = __FAILURE__;
     }
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 void hsm_client_tpm_store_deinit(void)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     if (!g_is_tpm_initialized)
     {
         LOG_ERROR("hsm_client_tpm_init not called");
@@ -75,12 +72,10 @@ void hsm_client_tpm_store_deinit(void)
         g_hsm_key_if = NULL;
         g_is_tpm_initialized = false;
     }
-    LOG_DEBUG("EXIT: %s", __FUNCTION__);
 }
 
 static HSM_CLIENT_HANDLE edge_hsm_client_tpm_create(void)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     HSM_CLIENT_HANDLE result;
     EDGE_TPM* edge_tpm;
     const HSM_CLIENT_STORE_INTERFACE* store_if = g_hsm_store_if;
@@ -105,13 +100,11 @@ static HSM_CLIENT_HANDLE edge_hsm_client_tpm_create(void)
     {
         result = (HSM_CLIENT_HANDLE)edge_tpm;
     }
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 static void edge_hsm_client_tpm_destroy(HSM_CLIENT_HANDLE handle)
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     if (!g_is_tpm_initialized)
     {
         LOG_ERROR("hsm_client_tpm_init not called");
@@ -127,7 +120,6 @@ static void edge_hsm_client_tpm_destroy(HSM_CLIENT_HANDLE handle)
         }
         free(edge_tpm);
     }
-    LOG_DEBUG("EXIT: %s", __FUNCTION__);
 }
 
 static int edge_hsm_client_activate_identity_key
@@ -137,8 +129,8 @@ static int edge_hsm_client_activate_identity_key
     size_t key_len
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
+
     if (!g_is_tpm_initialized)
     {
         LOG_ERROR("hsm_client_tpm_init not called");
@@ -177,7 +169,6 @@ static int edge_hsm_client_activate_identity_key
         }
     }
 
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
@@ -261,7 +252,6 @@ static int perform_sign
     int do_derive
 )
 {
-    LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result = 0;
     if (digest == NULL)
     {
@@ -368,7 +358,6 @@ static int perform_sign
             }
         }
     }
-    LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
