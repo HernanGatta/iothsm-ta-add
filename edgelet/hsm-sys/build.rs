@@ -170,11 +170,6 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib64", iothsm.display());
     println!("cargo:rustc-link-lib=iothsm");
 
-    // #[cfg(windows)]
-    fs::copy(
-        format!("{}/bin/enc.signed.dll", iothsm.display()),
-        format!("{}/../../../deps/enc.signed.dll", iothsm.display()));
-
     // we need to explicitly link with c shared util only when we build the C
     // library as a static lib which we do only in rust debug builds
     #[cfg(debug_assertions)]
@@ -190,6 +185,13 @@ fn main() {
 
     #[cfg(windows)]
     {
+        if fs::copy(
+            format!("{}/bin/enc.signed.dll", iothsm.display()),
+            format!("{}/../../../deps/enc.signed.dll", iothsm.display()))
+            .is_err() {
+            println!("#Failed to copy enclave to output directory");
+        }
+
         println!(
             "cargo:rustc-link-search=native={}/lib",
             env::var("OPENSSL_ROOT_DIR").unwrap()

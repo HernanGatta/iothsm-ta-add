@@ -82,8 +82,12 @@ int edge_hsm_client_store_remove_key
             }
             else
             {
-                if (verify_enclave_sas_key(key_file_handle) == 0 &&
-                    delete_enclave_sas_key(key_file_handle) != 0)
+                if (verify_enclave_sas_key(key_file_handle) != 0)
+                {
+                    LOG_ERROR("Key not loaded in HSM store %s", key_name);
+                    result = __FAILURE__;
+                }
+                else if (delete_enclave_sas_key(key_file_handle) != 0)
                 {
                     LOG_ERROR("Could not delete SAS key file");
                     result = __FAILURE__;
