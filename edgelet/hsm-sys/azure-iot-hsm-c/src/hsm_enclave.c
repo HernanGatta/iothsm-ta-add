@@ -21,6 +21,10 @@ oe_enclave_t* hsm_enclave_get_instance(void)
         {
             LOG_ERROR("Could not create HSM enclave");
         }
+        else
+        {
+            LOG_DEBUG("Created HSM enclave");
+        }
     }
 
     return g_hsm_enclave;
@@ -42,6 +46,8 @@ int hsm_enclave_destroy(void)
     }
     else
     {
+        LOG_DEBUG("Terminated HSM enclave");
+        
         result = 0;
     }
 
