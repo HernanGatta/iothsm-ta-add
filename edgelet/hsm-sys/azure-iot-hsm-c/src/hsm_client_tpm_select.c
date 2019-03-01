@@ -7,7 +7,6 @@
 #include "hsm_utils.h"
 #include "hsm_log.h"
 #include "hsm_client_tpm_device.h"
-#include "hsm_client_tpm_in_ta.h"
 #include "hsm_client_tpm_in_mem.h"
 
 extern const char* const ENV_TPM_SELECT;
