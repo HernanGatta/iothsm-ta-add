@@ -30,9 +30,8 @@ static int strcmp_i(const char* lhs, const char* rhs)
 }
 
 // IF ENV_TPM_SELECT is set and not empty, and neither "NO", "OFF" nor "FALSE", then the user
-// wants to use the TPM device for TPM functionality. If set to "ENCLAVE", then the user wants
-// to use an enclave for TPM functionality.
-static int use_tpm_device(bool *use_tpm, bool *use_enclave)
+// wants to use the TPM device for TPM functionality.
+static int use_tpm_device(bool *use_tpm)
 {
     LOG_DEBUG("ENTER: %s", __FUNCTION__);
     static const char * user_says_no[] = { "", "off", "no", "false" };
@@ -41,7 +40,6 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
     char * env_use_tpm;
 
     *use_tpm = false;
-    *use_enclave = false;
     if (hsm_get_env(ENV_TPM_SELECT, &env_use_tpm) != 0)
     {
         LOG_ERROR("Could not lookup env variable %s", ENV_TPM_SELECT);
@@ -49,6 +47,7 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
     }
     else
     {
+        LOG_DEBUG("INSIDE: %s - ENV = %s", __FUNCTION__, env_use_tpm);
         if (env_use_tpm != NULL)
         {
             *use_tpm = true;
@@ -61,17 +60,6 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
                 }
             }
             
-#if defined(HSM_USE_TEE)
-            if (*use_tpm == true)
-            {
-                if (strcmp_i(env_use_tpm, "enclave"))
-                {
-                    *use_tpm = false;
-                    *use_enclave = true;
-                }
-            }
-#endif  // HSM_USE_TEE
-
             free(env_use_tpm);
         }
 
@@ -79,22 +67,19 @@ static int use_tpm_device(bool *use_tpm, bool *use_enclave)
     }
 
     LOG_DEBUG("INSIDE: %s - Use TPM (%i)", __FUNCTION__, *use_tpm);
-    LOG_DEBUG("INSIDE: %s - Use Enclave (%i)", __FUNCTION__, *use_enclave);
     LOG_DEBUG("EXIT: %s (%i)", __FUNCTION__, result);
     return result;
 }
 
 static bool g_use_tpm_device = false;
-static bool g_use_enclave = false;
 
 int hsm_client_tpm_init(void)
 {
     LOG_DEBUG("ENTER: %s", __FUNCTION__);
     int result;
     bool use_tpm_flag = false;
-    bool use_enclave_flag = false;
 
-    if (use_tpm_device(&use_tpm_flag, &use_enclave_flag) != 0)
+    if (use_tpm_device(&use_tpm_flag) != 0)
     {
         result = __FAILURE__;
     }
@@ -108,16 +93,6 @@ int hsm_client_tpm_init(void)
                 g_use_tpm_device = true;
             }
         }
-#if defined(HSM_USE_TEE)
-        else if (use_enclave_flag)
-        {
-            result = hsm_client_tpm_ta_init();
-            if (result == 0)
-            {
-                g_use_enclave = true;
-            }
-        }
-#endif  // HSM_USE_TEE
         else
         {
             result = hsm_client_tpm_store_init();
@@ -135,12 +110,6 @@ void hsm_client_tpm_deinit(void)
     {
         hsm_client_tpm_device_deinit();
     }
-#if defined(HSM_USE_TEE)
-    else if (g_use_enclave)
-    {
-        hsm_client_tpm_ta_deinit();
-    }
-#endif  // HSM_USE_TEE
     else
     {
         hsm_client_tpm_store_deinit();
@@ -157,13 +126,6 @@ const HSM_CLIENT_TPM_INTERFACE* hsm_client_tpm_interface(void)
         LOG_DEBUG("INSIDE: %s - hsm_client_tpm_device_interface", __FUNCTION__);
         result = hsm_client_tpm_device_interface();
     }
-#if defined(HSM_USE_TEE)
-    else if (g_use_enclave)
-    {
-        LOG_DEBUG("INSIDE: %s - hsm_client_tpm_ta_interface", __FUNCTION__);
-        result = hsm_client_tpm_ta_interface();
-    }
-#endif  // HSM_USE_TEE
     else
     {
         LOG_DEBUG("INSIDE: %s - hsm_client_tpm_store_interface", __FUNCTION__);

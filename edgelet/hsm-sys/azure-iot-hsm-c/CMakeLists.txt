@@ -62,15 +62,13 @@ if(use_enclave)
     add_subdirectory(./deps/openenclave/new_platforms EXCLUDE_FROM_ALL)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/deps/openenclave/new_platforms/cmake")
 
-    add_definitions(-DHSM_USE_TEE)
-
     include(oeedl_file)
     oeedl_file(./enc/enc.edl host ENC_GEN ENC_C_GEN ENC_H_GEN ${OE_PATH}/include)
 
     set(source_c_files ${source_c_files}
         ./src/edge_enc_enclave_key.c
         ./src/edge_hsm_client_store_keys_ta.c
-        ./src/hsm_client_tpm_in_ta.c
+        ./src/edge_sas_enclave_key.c
         ./src/hsm_enclave.c
         ${ENC_C_GEN})
     set(source_h_files ${source_h_files}

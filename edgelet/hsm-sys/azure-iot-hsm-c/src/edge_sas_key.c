@@ -110,7 +110,7 @@ static int sas_key_decrypt(KEY_HANDLE key_handle,
     return 1;
 }
 
-void sas_key_destroy(KEY_HANDLE key_handle)
+static void sas_key_destroy(KEY_HANDLE key_handle)
 {
     SAS_KEY *sas_key = (SAS_KEY*)key_handle;
     if (sas_key != NULL)
