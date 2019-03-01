@@ -81,10 +81,16 @@ fn main() {
     let oe_repo = "azure-iot-hsm-c/deps/openenclave";
     let oe_new_platforms = format!("{}/new_platforms", oe_repo);
 
+    let use_enclave = if env::var("USE_ENCLAVE").is_ok() {
+        true
+    } else {
+        false
+    };
+
     println!("#Start Update C-Shared Utilities");
     if !Path::new(&format!("{}/.git", c_shared_repo)).exists()
         || !Path::new(&format!("{}/.git", utpm_repo)).exists()
-        || !Path::new(&format!("{}/.git", oe_repo)).exists()
+        || (use_enclave && !Path::new(&format!("{}/.git", oe_repo)).exists())
     {
         let _ = Command::new("git")
             .arg("submodule")
@@ -123,13 +129,15 @@ fn main() {
         .profile("Release")
         .build();
 
-    // println!("#And build the Open Enclave SDK");
-    let _shared = Config::new(oe_new_platforms)
-        .define("OE_TEE", "SGX")
-        .define("OE_USE_SIMULATION", "ON")
-        .set_platform_defines()
-        .profile("Release")
-        .build();
+    if use_enclave {
+        // println!("#And build the Open Enclave SDK");
+        let _shared = Config::new(oe_new_platforms)
+            .define("OE_TEE", "SGX")
+            .define("OE_USE_SIMULATION", "ON")
+            .set_platform_defines()
+            .profile("Release")
+            .build();
+    }
 
     // make the C libary at azure-iot-hsm-c (currently a subdirectory in this
     // crate)
@@ -141,17 +149,28 @@ fn main() {
     } else {
         "ON"
     };
+
     println!("#Start building HSM dev-mode library");
-    let iothsm = Config::new("azure-iot-hsm-c")
+    let mut iothsm_config = Config::new("azure-iot-hsm-c");
+
+    let iothsm_base = iothsm_config
         .define(SSL_OPTION, "ON")
         .define("CMAKE_BUILD_TYPE", "Release")
         .define("run_unittests", rut)
         .define("use_default_uuid", "ON")
         .define("use_http", "OFF")
-        .define("skip_samples", "ON")
-        .define("use_enclave", "ON")
-        .define("OE_TEE", "SGX")
-        .define("OE_USE_SIMULATION", "ON")
+        .define("skip_samples", "ON");
+
+    let iothsm_additional_defines =  if use_enclave {
+        iothsm_base
+            .define("use_enclave", "ON")
+            .define("OE_TEE", "SGX")
+            .define("OE_USE_SIMULATION", "ON")
+    } else {
+        iothsm_base
+    };
+
+    let iothsm = iothsm_additional_defines
         .set_platform_defines()
         .set_build_shared()
         .profile("Release")
@@ -176,22 +195,15 @@ fn main() {
     println!("cargo:rustc-link-lib=aziotsharedutil");
     #[cfg(debug_assertions)]
     println!("cargo:rustc-link-lib=utpm");
-    #[cfg(debug_assertions)]
-    println!("cargo:rustc-link-lib=oehost");
-    #[cfg(debug_assertions)]
-    println!("cargo:rustc-link-lib=oesocket_host");
-    #[cfg(debug_assertions)]
-    println!("cargo:rustc-link-lib=oestdio_host");
+
+    if use_enclave {
+        println!("cargo:rustc-link-lib=oehost");
+        println!("cargo:rustc-link-lib=oesocket_host");
+        println!("cargo:rustc-link-lib=oestdio_host");
+    }
 
     #[cfg(windows)]
     {
-        if fs::copy(
-            format!("{}/bin/enc.signed.dll", iothsm.display()),
-            format!("{}/../../../deps/enc.signed.dll", iothsm.display()))
-            .is_err() {
-            println!("#Failed to copy enclave to output directory");
-        }
-
         println!(
             "cargo:rustc-link-search=native={}/lib",
             env::var("OPENSSL_ROOT_DIR").unwrap()
@@ -203,9 +215,18 @@ fn main() {
             "cargo:rustc-link-search=native={}/bin/x64/Release",
             env::var("SGXSDKInstallPath").unwrap()
         );
-        println!("cargo:rustc-link-lib=sgx_urts_sim");
-        println!("cargo:rustc-link-lib=sgx_uae_service_sim");
-        println!("cargo:rustc-link-lib=sgx_uprotected_fs");
+
+        if use_enclave {
+            if fs::copy(
+                format!("{}/bin/enc.signed.dll", iothsm.display()),
+                format!("{}/../../../deps/enc.signed.dll", iothsm.display())).is_err() {
+                panic!("Failed to copy enclave to output directory");
+            }
+
+            println!("cargo:rustc-link-lib=sgx_urts_sim");
+            println!("cargo:rustc-link-lib=sgx_uae_service_sim");
+            println!("cargo:rustc-link-lib=sgx_uprotected_fs");
+        }
     }
 
     #[cfg(unix)]

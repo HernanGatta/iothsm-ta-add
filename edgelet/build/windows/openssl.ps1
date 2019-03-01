@@ -33,8 +33,9 @@ function Get-OpenSSL
         if (!(Test-Path -Path $strawberryPerlPath))
         {
             $strawberryPerlUri = "https://edgebuild.blob.core.windows.net/strawberry-perl/strawberry-perl-5.24.1.1-32bit-portable.zip"
-            Invoke-WebRequest -Uri $strawberryPerlUri -OutFile $strawberryPerlPath
 
+            $WebClient = New-Object Net.Webclient
+            $WebClient.Downloadfile($strawberryPerlUri, $strawberryPerlPath)
         }
     }
 
