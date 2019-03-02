@@ -4,6 +4,9 @@ extern crate cmake;
 #[cfg(windows)]
 use std::fs;
 
+// #[cfg(unix)]
+// use std::os::unix::fs;
+
 use std::env;
 use std::path::Path;
 use std::process::Command;
@@ -16,6 +19,10 @@ const USE_EMULATOR: &str = "use_emulator";
 trait SetPlatformDefines {
     fn set_platform_defines(&mut self) -> &mut Self;
     fn set_build_shared(&mut self) -> &mut Self;
+}
+
+trait SetEnclaveDefines {
+    fn set_enclave_options(&mut self) -> &mut Self;
 }
 
 impl SetPlatformDefines for Config {
@@ -76,6 +83,62 @@ impl SetPlatformDefines for Config {
     }
 }
 
+impl SetEnclaveDefines for Config {
+    #[cfg(windows)]
+    fn set_enclave_options(&mut self) -> &mut Self {
+        let use_enclave = if env::var("USE_ENCLAVE").is_ok() {
+            true
+        } else {
+            false
+        };
+
+        if use_enclave {
+            let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
+
+            if tee == "intel sgx" || tee == "sgx" {
+                self.define("OE_TEE", "SGX")
+                    .define("OE_USE_SIMULATION", "ON")
+            } else {
+                panic!("Building the HSM enclave on Windows is currently only supported for Intel SGX");
+            }
+        } else {
+            self
+        }
+    }
+
+    #[cfg(unix)]
+    fn set_enclave_options(&mut self) -> &mut Self {
+        let use_enclave = if env::var("USE_ENCLAVE").is_ok() {
+            true
+        } else {
+            false
+        };
+
+        if use_enclave {
+            let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
+
+            if tee == "arm trustzone" || tee == "tz" {
+                let ta_dev_kit_path = env::var("TA_DEV_KIT_DIR")
+                    .expect("Set environment variable TA_DEV_KIT_DIR to the path where the OP-TEE TA Dev Kit is located for ARM TrustZone");
+
+                //let toolchain_path = env::var("TOOLCHAIN_PATH")
+                //    .expect("Set environemnt variable TOOLCHAIN_PATH to the path where the toolchains are to ARM TrustZone");
+
+                //let toolchain_file = env::var("CMAKE_TOOLCHAIN_FILE")
+                //    .expect("Set environment variable CMAKE_TOOLCHAIN_FILE to the path to the CMake toolchain file you require for ARM TrustZone");
+
+                self.define("OE_TEE", "TZ")
+                    .define("TA_DEV_KIT_DIR", ta_dev_kit_path)
+                    //.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
+            } else {
+                panic!("Building the HSM enclave on Linux is currently only supported for ARM TrustZone");
+            }
+        } else {
+            self
+        }
+    }
+}
+
 fn main() {
     // Clone Azure C -shared library
     let c_shared_repo = "azure-iot-hsm-c/deps/c-shared";
@@ -132,13 +195,13 @@ fn main() {
         .build();
 
     if use_enclave {
-        // println!("#And build the Open Enclave SDK");
+        println!("#And build the Open Enclave SDK");
         let _shared = Config::new(oe_new_platforms)
-            .define("OE_TEE", "SGX")
-            .define("OE_USE_SIMULATION", "ON")
+            .set_enclave_options()
             .set_platform_defines()
             .profile("Release")
             .build();
+        
     }
 
     // make the C libary at azure-iot-hsm-c (currently a subdirectory in this
@@ -153,22 +216,15 @@ fn main() {
     };
 
     println!("#Start building HSM dev-mode library");
-    let mut iothsmcfg = Config::new("azure-iot-hsm-c");
-
-    iothsmcfg.define(SSL_OPTION, "ON")
-             .define("CMAKE_BUILD_TYPE", "Release")
-             .define("run_unittests", rut)
-             .define("use_default_uuid", "ON")
-             .define("use_http", "OFF")
-             .define("skip_samples", "ON");
-
-    if use_enclave {
-        iothsmcfg.define("use_enclave", "ON")
-                 .define("OE_TEE", "SGX")
-                 .define("OE_USE_SIMULATION", "ON");
-    }
-
-    let iothsm = iothsmcfg.set_platform_defines()
+    let iothsm = Config::new("azure-iot-hsm-c")
+        .define(SSL_OPTION, "ON")
+        .define("CMAKE_BUILD_TYPE", "Release")
+        .define("run_unittests", rut)
+        .define("use_default_uuid", "ON")
+        .define("use_http", "OFF")
+        .define("skip_samples", "ON")
+        .set_enclave_options()
+        .set_platform_defines()
         .set_build_shared()
         .profile("Release")
         .build();
