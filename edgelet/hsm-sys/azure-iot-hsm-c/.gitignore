@@ -311,3 +311,6 @@ CMakeCache.txt
 CPackConfig.cmake
 CPackSourceConfig.cmake
 cmake_install.cmake
+
+# Copied OP-TEE TA Dev Kit
+deps/optee

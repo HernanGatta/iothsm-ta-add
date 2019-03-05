@@ -82,7 +82,7 @@ if(use_enclave)
     if(MSVC)
         add_definitions(/wd4100)
     else()
-        set_source_files_properties(${ENC_C_GEN} PROPERTIES COMPILE_FLAGS -Wno-unused-parameter)
+        set_source_files_properties(${ENC_C_GEN} PROPERTIES COMPILE_FLAGS "-Wno-unused-parameter -Wno-strict-aliasing")
     endif(MSVC)
 else()
     set(source_c_files ${source_c_files}

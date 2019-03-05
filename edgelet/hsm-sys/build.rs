@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 extern crate cmake;
 
-#[cfg(windows)]
 use std::fs;
-
-// #[cfg(unix)]
-// use std::os::unix::fs;
+use std::path::PathBuf;
 
 use std::env;
 use std::path::Path;
@@ -86,18 +83,13 @@ impl SetPlatformDefines for Config {
 impl SetEnclaveDefines for Config {
     #[cfg(windows)]
     fn set_enclave_options(&mut self) -> &mut Self {
-        let use_enclave = if env::var("USE_ENCLAVE").is_ok() {
-            true
-        } else {
-            false
-        };
-
-        if use_enclave {
+        if env::var("USE_ENCLAVE").is_ok() {
             let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
 
             if tee == "intel sgx" || tee == "sgx" {
                 self.define("OE_TEE", "SGX")
                     .define("OE_USE_SIMULATION", "ON")
+                    .define("use_enclave", "ON")
             } else {
                 panic!("Building the HSM enclave on Windows is currently only supported for Intel SGX");
             }
@@ -108,28 +100,20 @@ impl SetEnclaveDefines for Config {
 
     #[cfg(unix)]
     fn set_enclave_options(&mut self) -> &mut Self {
-        let use_enclave = if env::var("USE_ENCLAVE").is_ok() {
-            true
-        } else {
-            false
-        };
-
-        if use_enclave {
+        if env::var("USE_ENCLAVE").is_ok() {
             let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
 
+            println!("Found TEE = {}", tee);
+
             if tee == "arm trustzone" || tee == "tz" {
-                let ta_dev_kit_path = env::var("TA_DEV_KIT_DIR")
-                    .expect("Set environment variable TA_DEV_KIT_DIR to the path where the OP-TEE TA Dev Kit is located for ARM TrustZone");
-
-                //let toolchain_path = env::var("TOOLCHAIN_PATH")
-                //    .expect("Set environemnt variable TOOLCHAIN_PATH to the path where the toolchains are to ARM TrustZone");
-
-                //let toolchain_file = env::var("CMAKE_TOOLCHAIN_FILE")
-                //    .expect("Set environment variable CMAKE_TOOLCHAIN_FILE to the path to the CMake toolchain file you require for ARM TrustZone");
+                let ta_dev_kit_path = PathBuf::from("azure-iot-hsm-c/deps/optee/ta_dev_kit");
+                let ta_dev_kit_abs_path = fs::canonicalize(&ta_dev_kit_path);
 
                 self.define("OE_TEE", "TZ")
-                    .define("TA_DEV_KIT_DIR", ta_dev_kit_path)
-                    //.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
+                    .define("TA_DEV_KIT_DIR", ta_dev_kit_abs_path.unwrap().to_str().unwrap())
+                    .define("CMAKE_SYSTEM_PROCESSOR", "arm")
+                    .define("use_enclave", "ON")
+                    //.define("CMAKE_TOOLCHAIN_FILE", toolchain_file)
             } else {
                 panic!("Building the HSM enclave on Linux is currently only supported for ARM TrustZone");
             }
@@ -151,6 +135,12 @@ fn main() {
     } else {
         false
     };
+
+    if use_enclave {
+        println!("Using enclave");
+    } else {
+        println!("UTTER FUDGE!!");
+    }
 
     println!("#Start Update C-Shared Utilities");
     if !Path::new(&format!("{}/.git", c_shared_repo)).exists()
@@ -195,13 +185,30 @@ fn main() {
         .build();
 
     if use_enclave {
+        Command::new("apt-get")
+            .arg("install")
+            .arg("python-pip")
+            .arg("python-dev")
+            .arg("libgmp3-dev")
+            .arg("-y")
+            .status()
+            .expect("apt-get install failed");
+
+        Command::new("pip")
+            .arg("install")
+            .arg("-i")
+            .arg("https://pypi.python.org/simple/")
+            .arg("pycrypto")
+            .current_dir("/target")
+            .status()
+            .expect("pip install pycrypto failed");
+
         println!("#And build the Open Enclave SDK");
         let _shared = Config::new(oe_new_platforms)
             .set_enclave_options()
             .set_platform_defines()
             .profile("Release")
             .build();
-        
     }
 
     // make the C libary at azure-iot-hsm-c (currently a subdirectory in this

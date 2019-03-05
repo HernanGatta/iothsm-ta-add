@@ -3,6 +3,8 @@ passthrough = [
     "BUILD_SOURCEVERSION",
     "VERSION",
     "IOTEDGE_HOMEDIR",
+    "USE_ENCLAVE",
+    "TA_DEV_KIT_DIR"
 ]
 
 [target.armv7-unknown-linux-gnueabihf]

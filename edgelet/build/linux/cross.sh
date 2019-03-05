@@ -59,6 +59,19 @@ process_args()
 
 process_args "$@"
 
+# Copy the OP-TEE TA Dev Kit into the source tree so that it be available
+# inside the Docker container that cross uses to build.
+if [[ ! -z ${TA_DEV_KIT_DIR} ]]; then
+    OPTEE_TARGET_PATH=${PROJECT_ROOT}/hsm-sys/azure-iot-hsm-c/deps/optee
+
+    if [[ -d ${OPTEE_TARGET_PATH} ]]; then
+        rm -rf ${OPTEE_TARGET_PATH}
+    fi
+
+    mkdir ${OPTEE_TARGET_PATH}
+    cp -r ${TA_DEV_KIT_DIR} ${OPTEE_TARGET_PATH}/ta_dev_kit
+fi
+
 if [[ -z ${RELEASE} ]]; then
     cd "$PROJECT_ROOT" && cross build --all --target "$TOOLCHAIN"
 else
