@@ -260,6 +260,9 @@ fn main() {
         println!("cargo:rustc-link-lib=oehost");
         println!("cargo:rustc-link-lib=oesocket_host");
         println!("cargo:rustc-link-lib=oestdio_host");
+
+        #[cfg(unix)]
+        println!("cargo:rustc-link-lib=teec");
     }
 
     #[cfg(windows)]
