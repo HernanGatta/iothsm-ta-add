@@ -257,9 +257,9 @@ fn main() {
     println!("cargo:rustc-link-lib=utpm");
 
     if use_enclave {
-        println!("cargo:rustc-link-lib=oehost");
         println!("cargo:rustc-link-lib=oesocket_host");
         println!("cargo:rustc-link-lib=oestdio_host");
+        println!("cargo:rustc-link-lib=oehost");
 
         #[cfg(unix)]
         println!("cargo:rustc-link-lib=teec");
