@@ -5,6 +5,12 @@
 
 #include "enc_u.h"
 
+#if defined(_ARM_) || defined(_M_ARM) || defined(__arm__) || defined(__thumb__) || defined(__aarch64__) || defined(OE_SIMULATE_OPTEE)
+# define ENCLAVE_NAME "a511a7ab-a1a4-4ba6-bf2a-447c6c1fb116"
+#else
+# define ENCLAVE_NAME "enc"
+#endif
+
 static oe_enclave_t* g_hsm_enclave = NULL;
 
 oe_enclave_t* hsm_enclave_get_instance(void)
@@ -12,7 +18,7 @@ oe_enclave_t* hsm_enclave_get_instance(void)
     if (g_hsm_enclave == NULL)
     {
         if (oe_create_enc_enclave(
-            "enc",
+            ENCLAVE_NAME,
             OE_ENCLAVE_TYPE_DEFAULT,
             0,
             NULL,
