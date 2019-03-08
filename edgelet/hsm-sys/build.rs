@@ -85,11 +85,17 @@ impl SetEnclaveDefines for Config {
     fn set_enclave_options(&mut self) -> &mut Self {
         if env::var("USE_ENCLAVE").is_ok() {
             let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
+            let use_simulation = env::var("USE_SIMULATION").is_ok();
 
             if tee == "intel sgx" || tee == "sgx" {
                 self.define("OE_TEE", "SGX")
-                    .define("OE_USE_SIMULATION", "ON")
-                    .define("use_enclave", "ON")
+                    .define("use_enclave", "ON");
+
+                if use_simulation {
+                    self.define("OE_USE_SIMULATION", "ON")
+                } else {
+                    self
+                }
             } else {
                 panic!("Building the HSM enclave on Windows is currently only supported for Intel SGX");
             }
@@ -102,10 +108,13 @@ impl SetEnclaveDefines for Config {
     fn set_enclave_options(&mut self) -> &mut Self {
         if env::var("USE_ENCLAVE").is_ok() {
             let tee = env::var("USE_ENCLAVE").unwrap().to_lowercase();
-
-            println!("Found TEE = {}", tee);
+            let use_simulation = env::var("USE_SIMULATION").is_ok();
 
             if tee == "arm trustzone" || tee == "tz" {
+                if use_simulation {
+                    panic!("Simulation builds are not yet supported for ARM TrustZone on Linux");
+                }
+
                 let ta_dev_kit_path = PathBuf::from("azure-iot-hsm-c/deps/optee/ta_dev_kit");
                 let ta_dev_kit_abs_path = fs::canonicalize(&ta_dev_kit_path);
 
@@ -113,7 +122,6 @@ impl SetEnclaveDefines for Config {
                     .define("TA_DEV_KIT_DIR", ta_dev_kit_abs_path.unwrap().to_str().unwrap())
                     .define("CMAKE_SYSTEM_PROCESSOR", "arm")
                     .define("use_enclave", "ON")
-                    //.define("CMAKE_TOOLCHAIN_FILE", toolchain_file)
             } else {
                 panic!("Building the HSM enclave on Linux is currently only supported for ARM TrustZone");
             }
@@ -135,12 +143,6 @@ fn main() {
     } else {
         false
     };
-
-    if use_enclave {
-        println!("Using enclave");
-    } else {
-        println!("UTTER FUDGE!!");
-    }
 
     println!("#Start Update C-Shared Utilities");
     if !Path::new(&format!("{}/.git", c_shared_repo)).exists()
@@ -185,23 +187,32 @@ fn main() {
         .build();
 
     if use_enclave {
-        Command::new("apt-get")
-            .arg("install")
-            .arg("python-pip")
-            .arg("python-dev")
-            .arg("libgmp3-dev")
-            .arg("-y")
-            .status()
-            .expect("apt-get install failed");
+        #[cfg(unix)]
+        {
+            // Using an enclave on Unix currently implies building for ARM and
+            // TrustZone as the Trusted Execution Technology (TEE). As such,
+            // this build script will execute inside the cross-compilation
+            // container that Cross spawns during build.
+            println!("#Install PIP");
+            Command::new("apt-get")
+                .arg("install")
+                .arg("python-pip")
+                .arg("python-dev")
+                .arg("libgmp3-dev")
+                .arg("-y")
+                .status()
+                .expect("apt-get install failed");
 
-        Command::new("pip")
-            .arg("install")
-            .arg("-i")
-            .arg("https://pypi.python.org/simple/")
-            .arg("pycrypto")
-            .current_dir("/target")
-            .status()
-            .expect("pip install pycrypto failed");
+            println!("#Install PyCrypto");
+            Command::new("pip")
+                .arg("install")
+                .arg("-i")
+                .arg("https://pypi.python.org/simple/")
+                .arg("pycrypto")
+                .current_dir("/target")
+                .status()
+                .expect("pip install pycrypto failed");
+        }
 
         println!("#And build the Open Enclave SDK");
         let _shared = Config::new(oe_new_platforms)
