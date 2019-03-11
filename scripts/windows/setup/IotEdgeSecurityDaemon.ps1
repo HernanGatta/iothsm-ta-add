@@ -400,8 +400,8 @@ function Install-IoTEdge {
     )
 
     # Used to indicate success of Deploy-IoTEdge so we can abort early in case of failure
-    $script:installPackagesSucceeded = $false
-    
+    $script:installPackagesCompleted = $false
+
     # Used to suppress some messages from Deploy-IoTEdge since we are automatically running Initialize-IoTEdge
     $calledFromInstall = $true
 
@@ -412,7 +412,7 @@ function Install-IoTEdge {
         -InvokeWebRequestParameters $InvokeWebRequestParameters `
         -RestartIfNeeded:$RestartIfNeeded
 
-    if (-not $script:installPackagesSucceeded) {
+    if (-not $script:installPackagesCompleted) {
         return
     }
 
@@ -585,11 +585,11 @@ function Install-Packages(
         if (Test-MobyAlreadyInstalled) {
             Write-HostRed
             if ((Test-MobyNeedsToBeMoved) -or (Test-LegacyInstaller)) {
-                Write-HostRed ('IoT Edge Moby Engine is installed in an invalid location. ' + 
+                Write-HostRed ('IoT Edge Moby Engine is installed in an invalid location. ' +
                     $ReinstallMessage)
             }
             else {
-                Write-HostRed ('IoT Edge Moby Engine is already installed, but IoT Edge is not. ' + 
+                Write-HostRed ('IoT Edge Moby Engine is already installed, but IoT Edge is not. ' +
                     $ReinstallMessage)
             }
             return
@@ -634,11 +634,12 @@ function Install-Packages(
     }
 
     if ($restartNeeded) {
-        Write-HostRed 'Reboot required.'
+        Write-HostRed 'Reboot required. To complete the installation after the reboot, run "Initialize-IoTEdge".'
         Restart-Computer -Confirm:(-not $RestartIfNeeded) -Force:$RestartIfNeeded
     }
-
-    $script:installPackagesSucceeded = $true
+    else {
+        $script:installPackagesCompleted = $true
+    }
 }
 
 function Setup-Environment([string] $ContainerOs) {
@@ -986,7 +987,7 @@ function Delete-Directory([string] $Path) {
     # Deleting them is a three-step process:
     #
     # 1. Take ownership of all files
-    Invoke-Native "takeown /r /skipsl /f ""$Path"""
+    Invoke-Native "takeown /r /skipsl /d y /f ""$Path"""
 
     # 2. Reset their ACLs so that they inherit from their container
     Invoke-Native "icacls ""$Path"" /reset /t /l /q /c"
@@ -1180,7 +1181,7 @@ function Get-VcRuntime {
         Write-HostGreen 'Installed VC Runtime.'
     }
     catch {
-        if ($LASTEXITCODE -eq 1638) {
+        if ((Test-Path Variable:\LASTEXITCODE) -and ($LASTEXITCODE -eq 1638)) {
             Write-HostGreen 'Skipping VC Runtime installation because a newer version is already installed.'
         }
         else {
@@ -1312,21 +1313,21 @@ function Set-AgentImage {
     if ($AgentImage) {
         Update-ConfigYaml({
             param($configurationYaml)
-
             $selectionRegex = 'image:\s*".*"'
             $replacementContent = "image: '$AgentImage'"
+            $configurationYaml = $configurationYaml -replace $selectionRegex, ($replacementContent -join "`n")
             if ($Username -and $Password) {
-                $configurationYaml = $configurationYaml -replace $selectionRegex, ($replacementContent -join "`n")
-                $selectionRegex = 'auth:\s*\{\s*\}'
+                $selectionRegex = '\n    auth:\s*\{\s*\}'
                 $agentRegistry = Get-AgentRegistry
                 $cred = New-Object System.Management.Automation.PSCredential ($Username, $Password)
                 $replacementContent = @(
-                    'auth:',
+                    '',
+                    '    auth:',
                     "      serveraddress: '$agentRegistry'",
                     "      username: '$Username'",
                     "      password: '$($cred.GetNetworkCredential().Password)'")
+                $configurationYaml = ($configurationYaml -replace $selectionRegex, ($replacementContent -join "`n"))
             }
-            $configurationYaml = ($configurationYaml -replace $selectionRegex, ($replacementContent -join "`n"))
             Write-HostGreen "Configured device with agent image '$AgentImage'."
             return $configurationYaml
         })
@@ -1505,7 +1506,12 @@ function Get-DockerCommandPrefix {
         'Windows' {
             # docker needs two more slashes after the scheme
             $namedPipeUrl = $MobyNamedPipeUrl -replace 'npipe://\./pipe/', 'npipe:////./pipe/'
-            return """docker"" -H ""$namedPipeUrl"""
+            $prefix = ""
+            # in case the installation has not been completed
+            if (-not (Get-Command "docker.exe" -ErrorAction SilentlyContinue)) {
+                $prefix = "$MobyInstallDirectory\"
+            }
+            return ('"{0}docker" -H "{1}"' -f $prefix, $namedPipeUrl)
         }
     }
 }
@@ -1622,11 +1628,11 @@ New-Alias -Name Uninstall-SecurityDaemon -Value Uninstall-IoTEdge -Force
 
 Export-ModuleMember `
     -Function `
-        Deploy-IoTEdge, 
-        Initialize-IoTEdge, 
-        Get-IoTEdgeLog, 
-        Update-IoTEdge, 
-        Install-IoTEdge, 
+        Deploy-IoTEdge,
+        Initialize-IoTEdge,
+        Get-IoTEdgeLog,
+        Update-IoTEdge,
+        Install-IoTEdge,
         Uninstall-IoTEdge `
     -Alias `
         Install-SecurityDaemon,

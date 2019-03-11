@@ -1,5 +1,4 @@
 // Copyright (c) Microsoft. All rights reserved.
-extern crate cmake;
 
 use std::fs;
 use std::path::PathBuf;
