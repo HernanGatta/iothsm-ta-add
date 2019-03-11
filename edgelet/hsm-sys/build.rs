@@ -120,7 +120,6 @@ impl SetEnclaveDefines for Config {
 
                 self.define("OE_TEE", "TZ")
                     .define("TA_DEV_KIT_DIR", ta_dev_kit_abs_path.unwrap().to_str().unwrap())
-                    .define("CMAKE_SYSTEM_PROCESSOR", "arm")
                     .define("use_enclave", "ON")
             } else {
                 panic!("Building the HSM enclave on Linux is currently only supported for ARM TrustZone");
